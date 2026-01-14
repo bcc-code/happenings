@@ -3,21 +3,20 @@
  * Converted from Prisma schema
  */
 
-import {
-  pgTable,
-  uuid,
-  varchar,
-  boolean,
-  timestamp,
-  text,
-  jsonb,
-  integer,
-  decimal,
-  pgEnum,
-  index,
-  unique,
-} from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+import {
+  boolean,
+  index,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  unique,
+  uuid,
+  varchar
+} from 'drizzle-orm/pg-core';
 
 // Enums
 export const roleEnum = pgEnum('role', [
@@ -184,11 +183,15 @@ export const eventsRelations = relations(events, ({ one }) => ({
 }));
 
 // Export all tables
-export * from './sessions';
-export * from './speakers';
-export * from './registrations';
-export * from './family';
-export * from './shifts';
-export * from './meals';
-export * from './finance';
+export * from './audit';
+export * from './cache';
+export * from './collections';
 export * from './communication';
+export * from './family';
+export * from './finance';
+export * from './meals';
+export * from './registrations';
+export * from './sessions';
+export * from './shifts';
+export * from './speakers';
+

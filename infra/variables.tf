@@ -121,16 +121,3 @@ variable "enable_private_ip" {
   type        = bool
   default     = true
 }
-
-# Redis Variables
-variable "redis_memory_size" {
-  description = "Redis memory size in GB"
-  type        = number
-  default     = 1
-}
-
-variable "redis_tier" {
-  description = "Redis tier (BASIC or STANDARD_HA)"
-  type        = string
-  default     = "BASIC"
-}

@@ -75,11 +75,6 @@ resource "google_cloud_run_service" "api" {
         }
 
         env {
-          name  = "REDIS_HOST"
-          value = var.redis_host
-        }
-
-        env {
           name  = "STORAGE_BUCKET"
           value = var.storage_bucket
         }

@@ -5,11 +5,15 @@
 import { Elysia } from 'elysia';
 import { verifyToken, requireAuth } from '../../middleware/auth';
 import { healthHandler } from './health';
+import authRouter from './auth';
 
 const router = new Elysia();
 
 // Health check (no auth required)
 router.get('/health', healthHandler);
+
+// Auth routes (no auth required)
+router.use(authRouter);
 
 // All other shared routes require authentication
 router.onBeforeHandle(verifyToken);

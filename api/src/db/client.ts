@@ -7,7 +7,7 @@ import { config } from '../config';
 import * as schema from './schema';
 
 // Type imports
-import type { BunSQLiteDatabase } from 'drizzle-orm/bun:sqlite';
+import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 // Determine database type
@@ -19,7 +19,7 @@ let sql: any;
 
 if (dbType === 'sqlite') {
   // SQLite for local development (using Bun's native SQLite)
-  const { drizzle } = await import('drizzle-orm/bun:sqlite');
+  const { drizzle } = await import('drizzle-orm/bun-sqlite');
   const { Database } = await import('bun:sqlite');
   
   // For SQLite, DATABASE_URL can be a file path or ':memory:' for in-memory DB

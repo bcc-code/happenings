@@ -5,13 +5,18 @@
 import { cors } from '@elysiajs/cors';
 import { Elysia } from 'elysia';
 import { config } from './config';
+import { registerAuditLogHandler } from './events/handlers/audit';
 import { handleError } from './middleware/error';
 import { swaggerSpec } from './openapi/config';
 import adminRouter from './routes/admin';
+import superAdminRouter from './routes/admin/super-admin';
 import appRouter from './routes/app';
 import sharedRouter from './routes/shared';
 
 const app = new Elysia();
+
+// Register audit logging handler
+registerAuditLogHandler();
 
 // CORS middleware
 app.use(
@@ -64,28 +69,33 @@ if (config.openapi.enabled) {
 }
 
 // API routes
-app.group(config.api.adminPath, adminRouter);
-app.group(config.api.appPath, appRouter);
-app.group(config.api.sharedPath, sharedRouter);
+app.group(config.api.adminPath, (app) => app.use(adminRouter));
+app.group(config.api.adminPath, (app) => app.use(superAdminRouter)); // Super admin routes (no tenant required)
+app.group(config.api.appPath, (app) => app.use(appRouter));
+app.group(config.api.sharedPath, (app) => app.use(sharedRouter));
 
 // Error handling
-app.onError(({ error }: { error: Error }) => {
+app.onError((context) => {
+  const error = context.error as Error;
   return handleError(error);
 });
 
 // 404 handler
-app.onAfterHandle(({ response, set }: { response: any; set: { status?: number } }) => {
-  if (set.status === 404) {
+app.onAfterHandle((context) => {
+  if (context.set.status === 404) {
     return {
       error: 'Not found',
       code: 'NOT_FOUND',
     };
   }
-  return response;
+  return context.response;
 });
 
 // Start server
-app.listen(config.port);
+app.listen({
+  port: config.port,
+  hostname: '0.0.0.0',
+});
 
 console.log(`🚀 Server running on port ${config.port}`);
 console.log(`📚 API Documentation: http://localhost:${config.port}${config.openapi.path}`);

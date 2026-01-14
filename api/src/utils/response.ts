@@ -26,3 +26,15 @@ export function unauthorized(message: string = 'Authentication required'): Respo
 export function forbidden(message: string = 'Access denied'): Response {
   return error(message, 'FORBIDDEN', 403);
 }
+
+export function success(data: any, status: number = 200): Response {
+  return new Response(
+    JSON.stringify({ data }),
+    {
+      status,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+}

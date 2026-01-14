@@ -13,15 +13,6 @@ The API has been migrated to **Elysia**, a modern, ergonomic web framework optim
 - **Built-in Features**: Validation, documentation generation, and more
 - **Bun Native**: Optimized specifically for Bun runtime
 
-## Why Not Bao.js?
-
-**Bao.js is no longer actively maintained** and is not recommended for new projects. Elysia is the recommended framework for Bun applications.
-
-## Key Changes
-
-### Framework
-- **From**: Hono (was considering Bao.js)
-- **To**: Elysia
 
 ### Middleware
 - Uses Elysia's `onBeforeHandle` hooks

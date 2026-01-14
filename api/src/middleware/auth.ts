@@ -134,6 +134,83 @@ export async function requireAdmin({ request, store }: Context) {
 }
 
 /**
+ * Verify simple JWT token for super admin (alternative to Auth0)
+ */
+export async function verifySuperAdminToken({ request, store }: Context) {
+  try {
+    const authHeader = request.headers.get('authorization');
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return null; // Not a super admin token, continue with normal auth
+    }
+
+    const token = authHeader.substring(7);
+
+    try {
+      const jwt = await import('jsonwebtoken');
+      const decoded = jwt.verify(
+        token,
+        process.env.JWT_SECRET || 'super-admin-secret-change-in-production'
+      ) as any;
+
+      if (decoded.role === 'super_admin' && decoded.type === 'super_admin') {
+        // Set super admin user in store
+        store.user = {
+          id: decoded.sub || 'super_admin',
+          auth0Id: decoded.sub || 'super_admin',
+          email: decoded.email || 'admin@localhost',
+          role: 'super_admin',
+        };
+        return true;
+      }
+    } catch (jwtError) {
+      // Not a valid super admin token, continue with normal auth
+      return null;
+    }
+  } catch (error) {
+    // Error checking token, continue with normal auth
+    return null;
+  }
+}
+
+/**
+ * Require super_admin role (for system-level operations)
+ * Note: This doesn't require a tenant context as super_admin can manage collections globally
+ * Supports both Auth0 and simple JWT token authentication
+ */
+export async function requireSuperAdmin({ request, store }: Context) {
+  // First try simple JWT token authentication
+  const superAdminToken = await verifySuperAdminToken({ request, store } as Context);
+  
+  if (superAdminToken && store.user?.role === 'super_admin') {
+    return; // Super admin authenticated via simple JWT
+  }
+
+  // Fall back to Auth0 authentication
+  if (!store.user) {
+    return unauthorized();
+  }
+
+  // Check if user has super_admin role in any tenant
+  const hasSuperAdmin = store.user.affiliations?.some(
+    (aff) => aff.role === 'super_admin'
+  );
+
+  if (!hasSuperAdmin) {
+    return forbidden('Super admin access required');
+  }
+
+  // Set role to super_admin if found
+  const superAdminAffiliation = store.user.affiliations?.find(
+    (aff) => aff.role === 'super_admin'
+  );
+  if (superAdminAffiliation) {
+    store.user.role = 'super_admin';
+    store.user.tenantId = superAdminAffiliation.tenantId;
+  }
+}
+
+/**
  * Require user to access their own data or manage relatives
  */
 export async function requireUserAccess(

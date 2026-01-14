@@ -25,12 +25,6 @@ output "database_private_ip" {
   sensitive   = true
 }
 
-output "redis_host" {
-  description = "Redis host address"
-  value       = module.redis.host
-  sensitive   = true
-}
-
 output "storage_bucket_resources" {
   description = "Resources storage bucket name"
   value       = module.storage.resources_bucket_name

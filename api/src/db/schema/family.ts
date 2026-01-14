@@ -3,17 +3,15 @@
  */
 
 import {
+  boolean,
+  decimal,
+  index,
   pgTable,
+  timestamp,
+  unique,
   uuid,
   varchar,
-  timestamp,
-  decimal,
-  boolean,
-  index,
-  unique,
 } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
-import { tenants, users, events } from './index';
 
 export const familyGroups = pgTable(
   'FamilyGroup',

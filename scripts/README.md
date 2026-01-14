@@ -34,7 +34,7 @@ pnpm bootstrap:start
    - Applies schema using `db:push`
 
 5. **Optionally starts services**
-   - Starts API server (port 9000)
+   - Starts API server (port 9009)
    - Starts End User App (port 9001)
    - Starts Admin Dashboard (port 9002)
 
@@ -45,10 +45,10 @@ The script creates `.env` files with sensible defaults for local development:
 **api/.env:**
 - `DB_TYPE=sqlite` - Uses SQLite for local dev
 - `DATABASE_URL=./local.db` - SQLite database file
-- `PORT=9000` - API server port
+- `PORT=9009` - API server port
 
 **admin-dashboard/.env & end-user-app/.env:**
-- `API_URL=http://localhost:9000` - API endpoint
+- `API_URL=http://localhost:9009` - API endpoint
 
 Auth0 configuration is optional and can be added manually to the `.env` files.
 

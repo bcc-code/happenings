@@ -105,7 +105,7 @@ bun run db:push
 pnpm dev
 
 # Or individually:
-pnpm dev:api      # API only (port 9000)
+pnpm dev:api      # API only (port 9009)
 pnpm dev:admin    # Admin Dashboard only (port 9002)
 pnpm dev:app      # End User App only (port 9001)
 

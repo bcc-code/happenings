@@ -258,7 +258,7 @@ import { vi } from 'vitest';
 vi.mock('#app', () => ({
   useRuntimeConfig: () => ({
     public: {
-      apiUrl: 'http://localhost:9000',
+      apiUrl: 'http://localhost:9009',
     },
   }),
 }));

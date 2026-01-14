@@ -2,15 +2,7 @@ import { defineNuxtPlugin } from '#app'
 import PrimeVue from 'primevue/config'
 
 export default defineNuxtPlugin((nuxtApp) => {
-  nuxtApp.vueApp.use(PrimeVue, {
-    // Configure PrimeVue
-    theme: {
-      options: {
-        darkModeSelector: false,
-        cssLayer: false,
-      },
-    },
-  })
+  nuxtApp.vueApp.use(PrimeVue)
 
   // Apply design tokens as CSS variables
   // This will be customized based on actual @bcc-code/design-tokens package structure

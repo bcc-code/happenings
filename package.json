@@ -35,5 +35,13 @@
     "node": ">=20.0.0",
     "pnpm": ">=9.0.0"
   },
-  "packageManager": "pnpm@9.15.0"
+  "packageManager": "pnpm@9.15.0",
+  "pnpm": {
+    "overrides": {
+      "glob": "^10.4.5",
+      "source-map": "^0.7.6",
+      "sourcemap-codec": "^1.4.8",
+      "whatwg-encoding": "^3.1.1"
+    }
+  }
 }

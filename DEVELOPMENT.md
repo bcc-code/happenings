@@ -6,8 +6,7 @@
 
 - Bun >= 1.0.0 (install: `curl -fsSL https://bun.sh/install | bash`)
 - pnpm >= 8.0.0
-- PostgreSQL (for API)
-- Redis (optional, for caching)
+- PostgreSQL (for API and caching)
 
 ### Initial Setup
 

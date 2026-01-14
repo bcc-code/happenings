@@ -42,7 +42,6 @@ resource "google_project_service" "required_apis" {
     "run.googleapis.com",
     "storage-api.googleapis.com",
     "secretmanager.googleapis.com",
-    "redis.googleapis.com",
     "servicenetworking.googleapis.com",
     "vpcaccess.googleapis.com",
     "cloudbuild.googleapis.com",
@@ -76,17 +75,6 @@ module "database" {
   database_tier  = var.database_tier
   vpc_network    = module.network.vpc_network_name
   depends_on     = [module.network]
-}
-
-# Redis Module
-module "redis" {
-  source = "./modules/redis"
-
-  project_id  = var.project_id
-  region      = var.region
-  environment = var.environment
-  vpc_network = module.network.vpc_network_name
-  depends_on  = [module.network]
 }
 
 # Storage Module
@@ -125,7 +113,6 @@ module "api" {
   environment      = var.environment
   vpc_connector    = google_vpc_access_connector.connector.name
   database_url     = module.database.connection_name
-  redis_host       = module.redis.host
   storage_bucket    = module.storage.resources_bucket_name
   secrets          = module.secrets.secret_ids
 
@@ -136,7 +123,6 @@ module "api" {
 
   depends_on = [
     module.database,
-    module.redis,
     module.storage,
     module.secrets,
     google_vpc_access_connector.connector,

@@ -23,11 +23,6 @@ variable "database_url" {
   type        = string
 }
 
-variable "redis_host" {
-  description = "Redis host"
-  type        = string
-}
-
 variable "storage_bucket" {
   description = "Storage bucket name"
   type        = string

@@ -210,12 +210,132 @@ All tenant-scoped operations:
 3. Verify tenant exists and is active
 4. Apply tenant context to queries
 
+## Event-Driven Architecture
+
+The API uses an event-driven architecture that automatically emits **before** and **after** events for all create, update, and delete operations.
+
+### Event System Overview
+
+- **Before Events (Blocking)**: Emitted before the database operation, within the transaction
+  - Can modify the payload
+  - Have access to both transactional (`tx`) and non-transactional (`db`) database connections
+  - Errors abort the transaction
+  - Use for validation, payload modification, or atomic operations
+
+- **After Events (Non-blocking)**: Emitted after the transaction commits
+  - Have access to regular database connection
+  - Errors are logged but don't affect the operation
+  - Use for notifications, cache updates, webhooks, audit logging
+
+### Using Events in CRUD Operations
+
+All create, update, and delete operations should use the event helpers:
+
+```typescript
+import { emitCreate, emitUpdate, emitDelete } from '../events';
+import { events } from '../db/schema';
+import { eq } from 'drizzle-orm';
+
+// Create with events
+const newEvent = await emitCreate(
+  'events',
+  payload,
+  {
+    userId: store.user.id,
+    tenantId: store.user.tenantId,
+  },
+  async (tx, modifiedPayload) => {
+    const [result] = await tx
+      .insert(events)
+      .values(modifiedPayload)
+      .returning();
+    return result;
+  }
+);
+
+// Update with events
+const updatedEvent = await emitUpdate(
+  'events',
+  { id: eventId, ...updates },
+  {
+    entityId: eventId,
+    userId: store.user.id,
+    tenantId: store.user.tenantId,
+  },
+  async (tx, modifiedPayload) => {
+    const [result] = await tx
+      .update(events)
+      .set(modifiedPayload)
+      .where(eq(events.id, modifiedPayload.id))
+      .returning();
+    return result;
+  }
+);
+
+// Delete with events
+await emitDelete(
+  'events',
+  { id: eventId },
+  {
+    entityId: eventId,
+    userId: store.user.id,
+    tenantId: store.user.tenantId,
+  },
+  async (tx, payload) => {
+    await tx.delete(events).where(eq(events.id, payload.id));
+  }
+);
+```
+
+### Registering Event Handlers
+
+Event handlers can be registered to listen to specific entities and operations:
+
+```typescript
+import { eventEmitter } from '../events';
+
+// Before event handler (can modify payload)
+eventEmitter.onBefore(
+  'events',
+  ['create', 'update'],
+  async (context) => {
+    // Modify payload
+    context.payload.title = context.payload.title.trim();
+    
+    // Use transactional DB for writes
+    await context.tx.insert(auditLogs).values({ ... });
+    
+    // Use non-transactional DB for reads
+    const existing = await context.db.query.events.findFirst({ ... });
+    
+    return context.payload;
+  },
+  { priority: 10 }
+);
+
+// After event handler (non-blocking)
+eventEmitter.onAfter(
+  'events',
+  ['create'],
+  async (context) => {
+    // Send notification
+    await sendNotification({
+      entity: context.metadata.entity,
+      operation: context.metadata.operation,
+      entityId: context.metadata.entityId,
+    });
+  }
+);
+```
+
+See [Event System Documentation](./src/events/README.md) for complete details.
+
 ## Adding New Endpoints
 
 1. Create route file in appropriate namespace
 2. Add OpenAPI/Swagger annotations
 3. Add authentication/authorization middleware
-4. Implement business logic
+4. Implement business logic using event helpers for CRUD operations
 5. Add to namespace index file
 6. Test endpoint
 7. Update documentation
@@ -223,30 +343,65 @@ All tenant-scoped operations:
 ## Example: Adding Admin Endpoint
 
 ```typescript
-// src/routes/admin/users.ts
-import { Router, Request, Response } from 'express';
-import { AuthenticatedRequest } from '../../middleware/auth';
-
-const router = Router();
+// src/routes/admin/events.ts
+import type { Context } from 'elysia';
+import { emitCreate } from '../../events';
+import { events } from '../../db/schema';
+import { error } from '../../utils/response';
 
 /**
  * @swagger
- * /admin/users:
- *   get:
- *     summary: List all users
+ * /admin/events:
+ *   post:
+ *     summary: Create a new event
  *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
  */
-router.get('/users', async (req: AuthenticatedRequest, res: Response) => {
-  // Implementation
-});
+export async function createEvent({ store, body }: Context) {
+  try {
+    if (!store.user || !store.user.tenantId) {
+      return error('Unauthorized', 'UNAUTHORIZED', 401);
+    }
 
-export default router;
+    const payload = body as { title: string; startDate: Date; endDate: Date };
+    
+    // Use emitCreate to automatically handle events
+    const newEvent = await emitCreate(
+      'events',
+      {
+        ...payload,
+        tenantId: store.user.tenantId,
+      },
+      {
+        userId: store.user.id,
+        tenantId: store.user.tenantId,
+      },
+      async (tx, modifiedPayload) => {
+        const [result] = await tx
+          .insert(events)
+          .values(modifiedPayload)
+          .returning();
+        return result;
+      }
+    );
+
+    return { data: newEvent };
+  } catch (err) {
+    console.error('Error creating event:', err);
+    return error('Internal server error', 'INTERNAL_ERROR', 500);
+  }
+}
 ```
 
 Then add to `src/routes/admin/index.ts`:
 
 ```typescript
-router.use('/users', usersRouter);
+import { Elysia } from 'elysia';
+import { createEvent } from './events';
+
+const router = new Elysia();
+router.post('/events', createEvent);
+
+export default router;
 ```

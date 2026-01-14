@@ -3,7 +3,7 @@
  */
 
 export const config = {
-  port: parseInt(process.env.PORT || '9000', 10),
+  port: parseInt(process.env.PORT || '9009', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
   
   // Database
