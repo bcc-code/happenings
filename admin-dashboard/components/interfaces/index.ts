@@ -16,5 +16,5 @@ export * from './form-builder/schema-converter'
 export * from './form-builder/types'
 export * from './form-builder/validation'
 
-// Re-export types
-export * from './types'
+// Types are exported from widgets/types.ts to avoid duplication
+// Import types from '~/components/widgets/types' or '~/components/widgets'

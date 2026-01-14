@@ -8,7 +8,7 @@
 </template>
 
 <script setup lang="ts">
-import { Toast, ConfirmDialog } from '~/components/widgets'
+import { ConfirmDialog, Toast } from '~/components/widgets';
 </script>
 
 <style>

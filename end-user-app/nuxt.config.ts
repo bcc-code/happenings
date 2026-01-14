@@ -1,6 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  compatibilityDate: '2026-01-14',
+  compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   telemetry: false, // Disable telemetry to avoid EIO errors
   
@@ -17,6 +17,14 @@ export default defineNuxtConfig({
 
   devServer: {
     port: 9001,
+  },
+
+  vite: {
+    server: {
+      hmr: {
+        port: 24680, // Explicit HMR port to avoid conflicts (different from admin-dashboard)
+      },
+    },
   },
 
   runtimeConfig: {
