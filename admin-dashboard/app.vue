@@ -2,13 +2,13 @@
   <div id="app">
     <NuxtPage />
     <!-- Global components for notifications and confirmations -->
-    <AdminToast />
-    <AdminConfirmDialog />
+    <Toast />
+    <ConfirmDialog />
   </div>
 </template>
 
 <script setup lang="ts">
-import { AdminToast, AdminConfirmDialog } from '~/components/admin'
+import { Toast, ConfirmDialog } from '~/components/widgets'
 </script>
 
 <style>

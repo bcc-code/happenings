@@ -1,5 +1,5 @@
 <template>
-  <AdminModuleContainer
+  <ModuleContainer
     :use-default-header="useDefaultHeader"
     :header-title="headerTitle"
     :header-subtitle="headerSubtitle"
@@ -80,8 +80,8 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { AdminModuleContainer } from '~/components/admin'
-import type { BreadcrumbItem } from '~/components/admin/types'
+import { ModuleContainer } from '~/components/layouts'
+import type { BreadcrumbItem } from '~/components/widgets/types'
 import { useToast } from '~/composables/useToast'
 import Button from 'primevue/button'
 import Card from 'primevue/card'

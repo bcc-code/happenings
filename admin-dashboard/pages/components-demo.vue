@@ -8,7 +8,7 @@
     <!-- Search Filter Demo -->
     <div class="demo-section">
       <h2>Search & Filter Component</h2>
-      <AdminSearchFilter
+      <SearchFilter
         :fields="searchFields"
         global-search-placeholder="Search events..."
         :show-advanced-filters="true"
@@ -22,7 +22,7 @@
     <!-- DataTable Demo -->
     <div class="demo-section">
       <h2>DataTable Component</h2>
-      <AdminDataTable
+      <DataTable
         :data="tableData"
         :columns="tableColumns"
         :loading="tableLoading"
@@ -77,7 +77,7 @@
     </div>
 
     <!-- Modal Component -->
-    <AdminModal
+    <Modal
       v-model="modalVisible"
       :title="modalTitle"
       :size="modalSize"
@@ -94,8 +94,8 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { AdminDataTable, AdminSearchFilter, AdminModal } from '~/components/admin'
-import type { TableColumn, TableContextMenuAction, SearchFilterField } from '~/components/admin/types'
+import { DataTable, SearchFilter, Modal } from '~/components/widgets'
+import type { TableColumn, TableContextMenuAction, SearchFilterField } from '~/components/widgets/types'
 import { useToast } from '~/composables/useToast'
 import { useConfirm } from '~/composables/useConfirm'
 import Button from 'primevue/button'

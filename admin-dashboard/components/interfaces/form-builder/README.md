@@ -28,8 +28,8 @@ A powerful, dynamic form builder component that can generate forms from JSON sch
 </template>
 
 <script setup lang="ts">
-import { FormBuilder } from '~/components/admin/form-builder'
-import type { FormSchema, RelationshipData } from '~/components/admin/form-builder/types'
+import { FormBuilder } from '~/components/interfaces'
+import type { FormSchema, RelationshipData } from '~/components/interfaces/form-builder/types'
 
 const formSchema: FormSchema = {
   table: 'Event',
@@ -217,7 +217,7 @@ Organize fields into collapsible sections:
 Use the schema converter utilities to generate forms from Drizzle ORM schemas:
 
 ```typescript
-import { drizzleToFormSchema, createEventFormSchema } from '~/components/admin/form-builder'
+import { drizzleToFormSchema, createEventFormSchema } from '~/components/interfaces'
 
 // Convert a Drizzle table to form schema
 const schema = drizzleToFormSchema('Event', drizzleColumns, drizzleRelations)
@@ -332,5 +332,5 @@ import type {
   FormField,
   RelationshipData,
   FormBuilderProps,
-} from '~/components/admin/form-builder/types'
+} from '~/components/interfaces/form-builder/types'
 ```

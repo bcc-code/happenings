@@ -38,46 +38,79 @@ All requirements are in the `requirements/` directory:
 
 ## Getting Started
 
-### 1. Install pnpm (if not already installed)
+### Quick Setup (Recommended)
+
+After cloning the repository, run the setup script:
+
+```bash
+# Install dependencies and set up everything
+pnpm install
+
+# Run setup script (creates .env files, sets up database, etc.)
+pnpm bootstrap
+
+# Or run setup and start all services immediately
+pnpm bootstrap:start
+```
+
+The setup script will:
+- ✅ Check for required tools (Bun, pnpm)
+- ✅ Create `.env` files with sensible defaults (SQLite for local dev)
+- ✅ Set up the database
+- ✅ Optionally start all services
+
+### Manual Setup
+
+If you prefer to set up manually:
+
+#### 1. Install pnpm (if not already installed)
 
 ```bash
 npm install -g pnpm
 ```
 
-### 2. Install Dependencies
+#### 2. Install Dependencies
 
 ```bash
 pnpm install
 ```
 
-### 2. Set Up Environment Variables
+#### 3. Set Up Environment Variables
 
-Create `.env` files in each directory based on `.env.example`:
-- `api/.env`
-- `admin-dashboard/.env`
-- `end-user-app/.env`
+Create `.env` files in each directory:
+- `api/.env` - Database and API configuration
+- `admin-dashboard/.env` - Frontend configuration
+- `end-user-app/.env` - Frontend configuration
 
-### 3. Set Up Database
+For local development, the setup script creates these automatically with SQLite as the database.
+
+#### 4. Set Up Database
 
 ```bash
-pnpm migrate
-# Or
-cd api && pnpm migrate
+# Using SQLite (default for local dev)
+cd api
+export DB_TYPE=sqlite
+export DATABASE_URL=./local.db
+bun run db:push
+
+# Or using PostgreSQL
+export DATABASE_URL=postgresql://user:password@localhost:5432/dbname
+bun run db:push
 ```
 
-### 4. Start Development Servers
+#### 5. Start Development Servers
 
 ```bash
 # From root directory - runs all services
 pnpm dev
 
 # Or individually:
-pnpm dev:api      # API only
-pnpm dev:admin    # Admin Dashboard only
-pnpm dev:app      # End User App only
+pnpm dev:api      # API only (port 9000)
+pnpm dev:admin    # Admin Dashboard only (port 9002)
+pnpm dev:app      # End User App only (port 9001)
 
 # Or from individual directories:
-cd api && pnpm dev
+cd api && bun run dev
 cd admin-dashboard && pnpm dev
 cd end-user-app && pnpm dev
 ```

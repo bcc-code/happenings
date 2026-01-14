@@ -8,6 +8,8 @@ export const config = {
   
   // Database
   databaseUrl: process.env.DATABASE_URL || '',
+  // Database type: 'postgres' or 'sqlite' (defaults to 'postgres' if DATABASE_URL starts with postgres://, otherwise 'sqlite')
+  databaseType: process.env.DB_TYPE || (process.env.DATABASE_URL?.startsWith('postgres') ? 'postgres' : 'sqlite'),
   
   // Auth0
   auth0: {

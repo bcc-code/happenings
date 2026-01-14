@@ -55,7 +55,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import ModuleHeader from './ModuleHeader.vue'
-import type { BreadcrumbItem } from './types'
+import type { BreadcrumbItem } from '../widgets/types'
 import type { MenuItem } from 'primevue/menuitem'
 
 export interface ModuleContainerProps {

@@ -59,7 +59,7 @@ import Breadcrumb from 'primevue/breadcrumb'
 import Button from 'primevue/button'
 import SplitButton from 'primevue/splitbutton'
 import type { MenuItem } from 'primevue/menuitem'
-import type { BreadcrumbItem } from './types'
+import type { BreadcrumbItem } from '../widgets/types'
 
 export interface ModuleHeaderProps {
   title?: string
