@@ -3,6 +3,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   telemetry: false, // Disable telemetry to avoid EIO errors
+  ssr: false, // Disable SSR - run as SPA only
   
   modules: [
     // PrimeVue is configured via plugin instead of module
@@ -42,8 +43,11 @@ export default defineNuxtConfig({
   //   // PWA configuration
   // },
 
-  components: {
-    // Ignore index.ts files in components directory (they're re-export files, not components)
-    ignore: ['**/index.ts'],
-  },
+  components: [
+    {
+      path: '~/components',
+      pathPrefix: false,
+      ignore: ['**/index.ts'],
+    },
+  ],
 })

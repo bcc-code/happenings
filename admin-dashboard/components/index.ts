@@ -17,6 +17,9 @@ export * from './widgets'
 // Layouts - Layout components
 export * from './layouts'
 
+// Containers - Container and layout group components
+export * from './containers'
+
 // Modules - Bigger modules (import from specific module)
 // Example: import { UserList } from '~/components/modules/users'
 

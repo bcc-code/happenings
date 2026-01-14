@@ -10,7 +10,10 @@ export default defineNuxtPlugin((nuxtApp) => {
       preset: BCCPreset,
       options: {
         darkModeSelector: false,
-        cssLayer: false,
+        cssLayer: {
+          name: 'primevue',
+          order: 'theme, base, primevue, custom'
+        }
       },
     },
     // Enable ripple effect (required for some components)

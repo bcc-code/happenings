@@ -103,20 +103,19 @@
 </template>
 
 <script setup lang="ts" generic="T extends Record<string, any>">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import ContextMenu from 'primevue/contextmenu'
+import DataTable from 'primevue/datatable'
 import ProgressSpinner from 'primevue/progressspinner'
+import { computed, ref } from 'vue'
 import type {
   TableColumn,
-  TableSortMeta,
   TableFilterMeta,
   TableGroupMeta,
-  TableContextMenuAction,
-  TableSelectionChangeEvent,
-  TableRowEvent,
   TableProps,
+  TableRowEvent,
+  TableSelectionChangeEvent,
+  TableSortMeta
 } from './types'
 
 interface Props extends Omit<TableProps<T>, 'value' | 'columns'> {
