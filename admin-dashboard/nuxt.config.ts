@@ -33,4 +33,9 @@ export default defineNuxtConfig({
   // pwa: {
   //   // PWA configuration
   // },
+
+  components: {
+    // Ignore index.ts files in components directory (they're re-export files, not components)
+    ignore: ['**/index.ts'],
+  },
 })

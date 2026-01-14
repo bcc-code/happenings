@@ -75,19 +75,19 @@
         </template>
       </Card>
     </template>
-  </AdminModuleContainer>
+  </ModuleContainer>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { ModuleContainer } from '~/components/layouts'
-import type { BreadcrumbItem } from '~/components/widgets/types'
-import { useToast } from '~/composables/useToast'
 import Button from 'primevue/button'
+import Calendar from 'primevue/calendar'
 import Card from 'primevue/card'
 import Checkbox from 'primevue/checkbox'
 import Select from 'primevue/select'
-import Calendar from 'primevue/calendar'
+import { ref } from 'vue'
+import { useToast } from '~/composables/useToast'
+import { ModuleContainer } from '~/layouts/ModuleContainer.vue'
+import type { BreadcrumbItem } from '~/widgets/types'
 
 const toast = useToast()
 

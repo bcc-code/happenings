@@ -53,10 +53,10 @@
 </template>
 
 <script setup lang="ts">
-import type { MenuItem } from 'primevue/menuitem'
 import { computed } from 'vue'
-import type { BreadcrumbItem } from '../widgets/types'
 import ModuleHeader from './ModuleHeader.vue'
+import type { BreadcrumbItem } from './types'
+import type { MenuItem } from 'primevue/menuitem'
 
 export interface ModuleContainerProps {
   // Header props (when using default header)

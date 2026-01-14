@@ -298,7 +298,7 @@ async function main() {
     logStep(step++, totalSteps, 'Starting services');
     await startServices();
   } else {
-    log('\n💡 Tip: Run "pnpm setup --start" to start all services automatically', 'cyan');
+    log('\n💡 Tip: Run "pnpm bootstrap:start" to start all services automatically', 'cyan');
   }
 
   log('\n' + '='.repeat(60), 'bright');

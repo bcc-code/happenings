@@ -123,20 +123,17 @@
 </template>
 
 <script setup lang="ts" generic="T extends Record<string, any>">
-import { ref, computed, watch } from 'vue'
-import Panel from 'primevue/panel'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
+import Panel from 'primevue/panel'
 import ProgressSpinner from 'primevue/progressspinner'
+import { computed, ref, watch } from 'vue'
 import FormFieldGroup from './FormFieldGroup.vue'
 import type {
-  FormSchema,
-  FormField,
-  FormSection,
-  RelationshipData,
-  FormBuilderProps,
   FormBuilderEmits,
-  FormValidationError,
+  FormBuilderProps,
+  FormField,
+  FormSection
 } from './types'
 import { validateField, validateForm } from './validation'
 
