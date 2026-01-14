@@ -1,0 +1,6 @@
+packages:
+  - 'api'
+  - 'admin-dashboard'
+  - 'end-user-app'
+  - 'shared'
+  - 'data-sync'

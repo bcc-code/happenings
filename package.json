@@ -1,0 +1,32 @@
+{
+  "name": "bcc-events-registration",
+  "version": "0.1.0",
+  "description": "Multi-tenant event registration system for BCC Events",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter \"./api\" dev & pnpm --filter \"./admin-dashboard\" dev & pnpm --filter \"./end-user-app\" dev",
+    "dev:api": "pnpm --filter \"./api\" dev",
+    "dev:admin": "pnpm --filter \"./admin-dashboard\" dev",
+    "dev:app": "pnpm --filter \"./end-user-app\" dev",
+    "build": "pnpm --recursive build",
+    "build:api": "pnpm --filter \"./api\" build",
+    "build:admin": "pnpm --filter \"./admin-dashboard\" build",
+    "build:app": "pnpm --filter \"./end-user-app\" build",
+    "test": "pnpm --recursive test",
+    "lint": "pnpm --recursive lint",
+    "typecheck": "pnpm --recursive typecheck",
+    "migrate": "pnpm --filter \"./api\" migrate",
+    "migrate:create": "pnpm --filter \"./api\" migrate:create",
+    "migrate:deploy": "pnpm --filter \"./api\" migrate:deploy",
+    "clean": "pnpm --recursive exec rm -rf node_modules dist .output .nuxt"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "typescript": "^5.5.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.0"
+}

@@ -1,0 +1,14 @@
+{
+  "name": "@bcc-events/components-docs",
+  "version": "0.1.0",
+  "description": "Documentation for BCC Events reusable Vue components",
+  "private": true,
+  "scripts": {
+    "docs:dev": "vitepress dev",
+    "docs:build": "vitepress build",
+    "docs:preview": "vitepress preview"
+  },
+  "devDependencies": {
+    "vitepress": "^1.0.0"
+  }
+}

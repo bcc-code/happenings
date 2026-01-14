@@ -1,0 +1,36 @@
+# Copy this file to terraform.tfvars and fill in your values
+
+project_id = "your-gcp-project-id"
+region     = "us-central1"
+environment = "dev"
+
+# Database Configuration
+database_name = "bcc_events"
+database_user = "bcc_events_user"
+database_tier = "db-f1-micro" # Use db-g1-small or higher for production
+
+# API Configuration
+api_min_instances = 0
+api_max_instances = 10
+api_cpu          = "1"
+api_memory       = "512Mi"
+
+# Admin Dashboard Configuration
+admin_min_instances = 0
+admin_max_instances = 10
+admin_cpu          = "1"
+admin_memory       = "512Mi"
+
+# End User App Configuration
+app_min_instances = 0
+app_max_instances = 100
+app_cpu          = "1"
+app_memory       = "512Mi"
+
+# Networking
+vpc_cidr        = "10.0.0.0/16"
+enable_private_ip = true
+
+# Redis Configuration
+redis_memory_size = 1
+redis_tier       = "BASIC"

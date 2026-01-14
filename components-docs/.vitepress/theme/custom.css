@@ -1,0 +1,18 @@
+/* Custom styles for Components documentation */
+
+:root {
+  --vp-c-brand: #42b883;
+  --vp-c-brand-light: #66d9ef;
+  --vp-c-brand-lighter: #a6e22e;
+  --vp-c-brand-dark: #33a06f;
+  --vp-c-brand-darker: #2d8659;
+}
+
+/* Component demo styles */
+.component-demo {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  background: var(--vp-c-bg-soft);
+}

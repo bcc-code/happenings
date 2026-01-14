@@ -1,0 +1,671 @@
+// Prisma schema for BCC Events Registration App
+// This is a placeholder schema - will be expanded as requirements are finalized
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Tenants (Churches)
+model Tenant {
+  id            String   @id @default(uuid())
+  name          String
+  slug          String   @unique
+  domain        String?  @unique
+  logoUrl       String?
+  primaryColor  String?
+  secondaryColor String?
+  timezone      String   @default("UTC")
+  locale        String   @default("en")
+  currency      String   @default("USD")
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  events            Event[]
+  users             UserAffiliation[]
+  speakers          Speaker[]
+  paymentProviders  PaymentProviderConfig[]
+  shiftCategories   ShiftCategory[]
+  announcements     Announcement[]
+  emailTemplates    EmailTemplate[]
+  familyGroups      FamilyGroup[]
+
+  @@index([slug])
+  @@index([domain])
+}
+
+// Users (Central database, not tenant-scoped)
+// Links to BCC Core API SDK Person entity via personId
+model User {
+  id            String   @id @default(uuid())
+  auth0Id       String   @unique
+  personId      String?  @unique // BCC Core API SDK Person ID
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  firstName     String?
+  lastName      String?
+  phone         String?
+  avatarUrl     String?
+  timezone      String   @default("UTC")
+  locale        String   @default("en")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastLoginAt   DateTime?
+
+  // Relations
+  affiliations      UserAffiliation[]
+  registrations     Registration[]
+  sessionRegistrations SessionRegistration[]
+  mealSelections    MealSelection[]
+  shiftAssignments  ShiftAssignment[]
+  shiftWaitlist    ShiftWaitlist[]
+  volunteerSkills   UserVolunteerSkill[]
+  notifications     Notification[]
+  sentMessages      Message[] @relation("SentMessages")
+  receivedMessages  Message[] @relation("ReceivedMessages")
+  shiftAssignmentsAsContact Shift[] @relation("ShiftContactPerson")
+  familyGroupMembers FamilyGroupMember[]
+  familyRegistrationsAsPrimary FamilyRegistration[] @relation("FamilyPrimaryContact")
+
+  @@index([auth0Id])
+  @@index([email])
+  @@index([personId])
+}
+
+// User-Church Affiliations (Many-to-Many)
+model UserAffiliation {
+  id          String   @id @default(uuid())
+  userId      String
+  tenantId    String
+  role        String   @default("user") // super_admin, admin, event_manager, user
+  isPrimary   Boolean  @default(false)
+  status      String   @default("active") // active, inactive
+  joinedAt    DateTime @default(now())
+  lastActiveAt DateTime?
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tenantId])
+  @@index([userId])
+  @@index([tenantId])
+}
+
+// Events (Tenant-scoped, but can be global)
+model Event {
+  id                String   @id @default(uuid())
+  tenantId          String
+  title             String
+  description       String?
+  startDate         DateTime
+  endDate           DateTime
+  venue             String?
+  capacity          Int?
+  registrationOpen  DateTime?
+  registrationClose DateTime?
+  isGlobal          Boolean  @default(false)
+  globalAccessRules Json?    // Access rules for global events
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sessions        Session[]
+  registrations   Registration[]
+  mealPlans       MealPlan[]
+  shifts          Shift[]
+  announcements   Announcement[]
+  pricingTiers    PricingTier[]
+  messageThreads  MessageThread[]
+  familyRegistrations FamilyRegistration[]
+
+  @@index([tenantId])
+  @@index([isGlobal])
+  @@index([startDate])
+}
+
+// Placeholder models - will be expanded based on requirements
+model Session {
+  id          String   @id @default(uuid())
+  eventId     String
+  title       String
+  description String?
+  startTime   DateTime
+  endTime     DateTime
+  room        String?
+  capacity    Int?
+  sessionType String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  event             Event                @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  sessionRegistrations SessionRegistration[]
+  sessionSpeakers    SessionSpeaker[]
+  shifts            Shift[]
+
+  @@index([eventId])
+}
+
+model Speaker {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  bio       String?
+  photoUrl  String?
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant          Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sessionSpeakers SessionSpeaker[]
+
+  @@index([tenantId])
+}
+
+model SessionSpeaker {
+  sessionId String
+  speakerId String
+  role      String? // main, co-speaker, moderator, etc.
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  speaker Speaker @relation(fields: [speakerId], references: [id], onDelete: Cascade)
+
+  @@id([sessionId, speakerId])
+}
+
+model Registration {
+  id                  String   @id @default(uuid())
+  userId              String
+  eventId             String
+  tenantId            String
+  familyRegistrationId String?  // Link to family registration if part of family
+  pricingTierId       String?
+  basePrice           Decimal  @default(0)
+  discountAmount      Decimal  @default(0)
+  taxAmount           Decimal  @default(0)
+  totalAmount         Decimal  @default(0)
+  currency            String   @default("USD")
+  status              String   @default("pending") // pending, confirmed, cancelled
+  registeredAt       DateTime @default(now())
+  paymentDueDate      DateTime?
+
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event         Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  pricingTier   PricingTier? @relation(fields: [pricingTierId], references: [id])
+  mealSelections MealSelection[]
+  shiftAssignments ShiftAssignment[]
+  invoices      Invoice[]
+  payments      Payment[]
+  familyRegistration FamilyRegistration? @relation(fields: [familyRegistrationId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([eventId])
+  @@index([tenantId])
+  @@index([status])
+  @@index([familyRegistrationId])
+}
+
+// Family Groups - Represents a family unit
+model FamilyGroup {
+  id              String   @id @default(uuid())
+  tenantId        String
+  name            String?  // Optional family name/identifier
+  primaryContactId String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant          Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  primaryContact  User                @relation(fields: [primaryContactId], references: [id], onDelete: Cascade)
+  members         FamilyGroupMember[]
+  registrations   FamilyRegistration[]
+
+  @@index([tenantId])
+  @@index([primaryContactId])
+}
+
+// Family Group Members - Links users to family groups with relationship types
+model FamilyGroupMember {
+  id              String   @id @default(uuid())
+  familyGroupId   String
+  userId          String
+  relationshipType String  // parent, child, spouse, guardian, sibling, other
+  isPrimaryContact Boolean @default(false)
+  addedAt         DateTime @default(now())
+  addedBy         String?  // User who added this member
+
+  familyGroup FamilyGroup @relation(fields: [familyGroupId], references: [id], onDelete: Cascade)
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([familyGroupId, userId])
+  @@index([familyGroupId])
+  @@index([userId])
+}
+
+// Family Registrations - Groups multiple registrations together
+model FamilyRegistration {
+  id              String   @id @default(uuid())
+  familyGroupId   String
+  eventId         String
+  tenantId        String
+  primaryContactId String
+  status          String   @default("pending") // pending, confirmed, cancelled, partial
+  familyDiscount  Decimal  @default(0) // Discount applied to family registration
+  totalAmount     Decimal  @default(0) // Total for all family members
+  currency        String   @default("USD")
+  registeredAt    DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  familyGroup     FamilyGroup @relation(fields: [familyGroupId], references: [id], onDelete: Cascade)
+  event           Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  primaryContact  User        @relation("FamilyPrimaryContact", fields: [primaryContactId], references: [id], onDelete: Cascade)
+  registrations   Registration[]
+
+  @@unique([familyGroupId, eventId])
+  @@index([familyGroupId])
+  @@index([eventId])
+  @@index([tenantId])
+  @@index([primaryContactId])
+  @@index([status])
+}
+
+model SessionRegistration {
+  id              String   @id @default(uuid())
+  userId          String
+  sessionId       String
+  registeredAt    DateTime @default(now())
+  status          String   @default("registered") // registered, waitlist, cancelled
+  waitlistPosition Int?
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sessionId])
+  @@index([userId])
+  @@index([sessionId])
+}
+
+// Placeholder models for other modules
+model MealPlan {
+  id          String   @id @default(uuid())
+  eventId     String
+  name        String
+  description String?
+  mealType    String
+  date        DateTime
+  time        DateTime?
+  venue       String?
+  price       Decimal  @default(0)
+  capacity    Int?
+  isRequired  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  event          Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  mealSelections MealSelection[]
+  menuItems      MenuItem[]
+
+  @@index([eventId])
+}
+
+model MenuItem {
+  id        String   @id @default(uuid())
+  mealPlanId String
+  name      String
+  description String?
+  ingredients String?
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  mealPlan MealPlan @relation(fields: [mealPlanId], references: [id], onDelete: Cascade)
+
+  @@index([mealPlanId])
+}
+
+model MealSelection {
+  id            String   @id @default(uuid())
+  registrationId String
+  mealPlanId    String
+  dietaryNotes  String?
+  selectedAt    DateTime @default(now())
+
+  registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  mealPlan     MealPlan     @relation(fields: [mealPlanId], references: [id], onDelete: Cascade)
+
+  @@index([registrationId])
+  @@index([mealPlanId])
+}
+
+// Shift Categories
+model ShiftCategory {
+  id          String   @id @default(uuid())
+  tenantId    String
+  name        String
+  description String?
+  displayOrder Int     @default(0)
+  color       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shifts  Shift[]
+
+  @@index([tenantId])
+}
+
+// Volunteer Shifts
+model Shift {
+  id                String   @id @default(uuid())
+  tenantId          String
+  eventId           String
+  sessionId         String?
+  categoryId        String?
+  title             String
+  description       String?
+  startTime         DateTime
+  endTime           DateTime
+  location          String?
+  requiredVolunteers Int     @default(1)
+  currentVolunteers  Int     @default(0)
+  skillsRequired     String?
+  contactPersonId   String?
+  shiftType         String   @default("during") // pre, during, post
+  priority          String   @default("normal") // low, normal, high, critical
+  isActive          Boolean  @default(true)
+  requiresApproval  Boolean  @default(false)
+  allowNonParticipants Boolean @default(true)
+  createdBy         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event           Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  session         Session?        @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  category        ShiftCategory?  @relation(fields: [categoryId], references: [id])
+  contactPerson   User?           @relation("ShiftContactPerson", fields: [contactPersonId], references: [id])
+  assignments     ShiftAssignment[]
+  waitlist        ShiftWaitlist[]
+  requirements    ShiftRequirement[]
+
+  @@index([tenantId])
+  @@index([eventId])
+  @@index([sessionId])
+  @@index([categoryId])
+  @@index([startTime])
+  @@index([shiftType])
+}
+
+// Shift Assignments (Volunteer Sign-ups)
+model ShiftAssignment {
+  id            String   @id @default(uuid())
+  shiftId       String
+  userId        String
+  registrationId String?  // Null if non-participant volunteer
+  status        String   @default("pending") // pending, approved, rejected, checked_in, checked_out, no_show, cancelled
+  assignedAt   DateTime @default(now())
+  approvedAt    DateTime?
+  checkedInAt   DateTime?
+  checkedOutAt  DateTime?
+  notes         String?  // Admin notes
+  volunteerNotes String? // Volunteer notes
+  hoursWorked   Decimal? // Calculated from check-in/check-out
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  shift        Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  registration Registration? @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  @@unique([shiftId, userId])
+  @@index([shiftId])
+  @@index([userId])
+  @@index([status])
+}
+
+// Shift Waitlist
+model ShiftWaitlist {
+  id        String   @id @default(uuid())
+  shiftId   String
+  userId    String
+  position  Int
+  addedAt   DateTime @default(now())
+  notifiedAt DateTime?
+
+  shift Shift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([shiftId, userId])
+  @@index([shiftId])
+  @@index([userId])
+}
+
+// Volunteer Skills
+model VolunteerSkill {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userSkills      UserVolunteerSkill[]
+  shiftRequirements ShiftRequirement[]
+}
+
+// User Volunteer Skills
+model UserVolunteerSkill {
+  userId           String
+  skillId           String
+  proficiencyLevel String? // beginner, intermediate, advanced, expert
+  createdAt        DateTime @default(now())
+
+  user  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill VolunteerSkill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([userId, skillId])
+  @@index([userId])
+  @@index([skillId])
+}
+
+// Shift Requirements (Skills needed for shift)
+model ShiftRequirement {
+  shiftId         String
+  skillId         String
+  required        Boolean @default(true) // true = required, false = preferred
+  createdAt       DateTime @default(now())
+
+  shift Shift          @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  skill VolunteerSkill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([shiftId, skillId])
+  @@index([shiftId])
+  @@index([skillId])
+}
+
+model PricingTier {
+  id            String   @id @default(uuid())
+  eventId       String
+  name          String
+  price         Decimal
+  currency      String   @default("USD")
+  startDate     DateTime?
+  endDate       DateTime?
+  capacityLimit Int?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  event        Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  registrations Registration[]
+
+  @@index([eventId])
+}
+
+model Invoice {
+  id            String   @id @default(uuid())
+  registrationId String
+  invoiceNumber String   @unique
+  amount        Decimal
+  currency      String   @default("USD")
+  taxAmount     Decimal  @default(0)
+  status        String   @default("pending") // pending, paid, overdue, cancelled
+  issuedAt      DateTime @default(now())
+  dueDate       DateTime?
+  paidAt        DateTime?
+  pdfUrl        String?
+
+  registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  payments     Payment[]
+
+  @@index([registrationId])
+  @@index([invoiceNumber])
+  @@index([status])
+}
+
+model Payment {
+  id                    String   @id @default(uuid())
+  registrationId        String
+  invoiceId             String?
+  providerId            String?
+  amount                Decimal
+  currency              String   @default("USD")
+  paymentMethod         String
+  provider              String
+  providerTransactionId String?
+  status                String   @default("pending") // pending, processing, completed, failed, cancelled
+  processedAt           DateTime?
+  failureReason         String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  invoice     Invoice?      @relation(fields: [invoiceId], references: [id])
+  provider    PaymentProviderConfig? @relation(fields: [providerId], references: [id])
+
+  @@index([registrationId])
+  @@index([providerTransactionId])
+  @@index([status])
+}
+
+model PaymentProviderConfig {
+  id          String   @id @default(uuid())
+  tenantId    String
+  pluginId    String
+  name        String
+  configData  Json     // Encrypted configuration
+  isActive    Boolean  @default(true)
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant  Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  payments Payment[]
+
+  @@index([tenantId])
+  @@index([pluginId])
+}
+
+model Announcement {
+  id              String   @id @default(uuid())
+  tenantId        String
+  eventId         String?
+  sessionId       String?
+  title           String
+  content         String
+  announcementType String
+  priority        String   @default("normal")
+  targetAudience  Json?
+  isPublished     Boolean  @default(false)
+  publishedAt     DateTime?
+  scheduledFor    DateTime?
+  createdBy       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event   Event?  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([eventId])
+  @@index([isPublished])
+}
+
+model Notification {
+  id                String   @id @default(uuid())
+  userId            String
+  type              String
+  title             String
+  content           String
+  relatedEntityType String?
+  relatedEntityId   String?
+  isRead            Boolean  @default(false)
+  readAt            DateTime?
+  actionUrl         String?
+  metadata          Json?
+  createdAt         DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+model Message {
+  id              String   @id @default(uuid())
+  threadId        String?
+  senderId        String
+  recipientId     String
+  subject         String?
+  content         String
+  isRead          Boolean  @default(false)
+  readAt          DateTime?
+  parentMessageId String?
+  createdAt       DateTime @default(now())
+
+  sender    User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient User     @relation("ReceivedMessages", fields: [recipientId], references: [id], onDelete: Cascade)
+  thread    MessageThread? @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([threadId])
+}
+
+model MessageThread {
+  id              String   @id @default(uuid())
+  eventId         String?
+  participantIds  String[] // Array of user IDs
+  lastMessageAt   DateTime?
+  createdAt       DateTime @default(now())
+
+  event    Event?    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@index([eventId])
+}
+
+model EmailTemplate {
+  id          String   @id @default(uuid())
+  tenantId    String
+  templateKey String
+  name        String
+  subject     String
+  htmlBody    String
+  textBody    String?
+  variables   Json?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, templateKey])
+  @@index([tenantId])
+}

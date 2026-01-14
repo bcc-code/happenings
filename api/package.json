@@ -1,0 +1,42 @@
+{
+  "name": "@bcc-events/api",
+  "version": "0.1.0",
+  "description": "BCC Events Registration API",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "lint": "eslint src --ext .ts",
+    "test": "bun test",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "db:drop": "drizzle-kit drop",
+    "db:seed": "bun src/db/seed.ts",
+    "openapi:generate": "bun src/openapi/generate.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@bcc-code/bcc-core-api-node-sdk": "latest",
+    "@bcc-events/shared": "workspace:*",
+    "drizzle-orm": "^0.29.0",
+    "elysia": "^1.1.0",
+    "postgres": "^3.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "jwks-rsa": "^3.1.0",
+    "swagger-jsdoc": "^6.2.8",
+    "zod": "^3.23.0",
+    "@elysiajs/cors": "^1.1.0"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/node": "^20.14.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "bun-types": "latest",
+    "drizzle-kit": "^0.20.0",
+    "eslint": "^8.57.0",
+    "typescript": "^5.5.0"
+  }
+}
