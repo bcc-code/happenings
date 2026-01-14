@@ -1,8 +1,12 @@
-# Bun configuration
-[install]
-# Use workspace protocol for internal packages
-auto = true
+# Bun configuration file
+# This file configures Bun's runtime behavior
 
-[test]
-# Test configuration
-timeout = 30000
+# Note: Bun's test runner automatically looks for test files matching:
+# **/*.{test,spec}.{js,jsx,ts,tsx}
+#
+# To run tests: bun test
+# To run with coverage: bun test --coverage
+# To run in watch mode: bun test --watch
+#
+# Test setup is handled in tests/setup.ts which should be imported
+# at the beginning of test files or configured via test preload

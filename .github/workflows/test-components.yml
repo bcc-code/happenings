@@ -1,0 +1,61 @@
+name: Test Components
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'admin-dashboard/**'
+      - 'end-user-app/**'
+      - 'shared/**'
+      - '.github/workflows/test-components.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'admin-dashboard/**'
+      - 'end-user-app/**'
+      - 'shared/**'
+      - '.github/workflows/test-components.yml'
+
+jobs:
+  test-components:
+    name: Test Frontend Components
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        app: [admin-dashboard, end-user-app]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8.15.0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Run component tests
+        run: pnpm --filter "./${{ matrix.app }}" test
+        env:
+          CI: true
+      
+      - name: Generate coverage report
+        run: pnpm --filter "./${{ matrix.app }}" test:coverage
+        continue-on-error: true
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./${{ matrix.app }}/coverage/lcov.info
+          flags: ${{ matrix.app }}
+          name: ${{ matrix.app }}-coverage
+        continue-on-error: true

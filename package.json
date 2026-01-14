@@ -15,6 +15,10 @@
     "build:admin": "pnpm --filter \"./admin-dashboard\" build",
     "build:app": "pnpm --filter \"./end-user-app\" build",
     "test": "pnpm --recursive test",
+    "test:components": "pnpm --filter \"./admin-dashboard\" test && pnpm --filter \"./end-user-app\" test",
+    "test:api": "pnpm --filter \"./api\" test",
+    "test:coverage": "pnpm --recursive test:coverage",
+    "test:watch": "pnpm --recursive test:watch",
     "lint": "pnpm --recursive lint",
     "typecheck": "pnpm --recursive typecheck",
     "migrate": "pnpm --filter \"./api\" migrate",
@@ -24,12 +28,12 @@
     "clean": "pnpm --recursive exec rm -rf node_modules dist .output .nuxt"
   },
   "devDependencies": {
-    "@types/node": "^20.14.0",
-    "typescript": "^5.5.0"
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
   },
   "engines": {
-    "node": ">=18.0.0",
-    "pnpm": ">=8.0.0"
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
   },
-  "packageManager": "pnpm@8.15.0"
+  "packageManager": "pnpm@9.15.0"
 }

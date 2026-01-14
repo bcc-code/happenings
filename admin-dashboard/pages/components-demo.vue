@@ -88,7 +88,7 @@
     >
       <p>This is a {{ modalSize }} modal. You can put any content here.</p>
       <p v-if="modalSize === 'fullscreen'">Fullscreen modals are great for complex forms or detailed views.</p>
-    </AdminModal>
+    </Modal>
   </div>
 </template>
 

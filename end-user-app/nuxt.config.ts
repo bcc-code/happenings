@@ -1,11 +1,11 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  compatibilityDate: '2026-01-12',
+  compatibilityDate: '2026-01-14',
   devtools: { enabled: true },
   telemetry: false, // Disable telemetry to avoid EIO errors
   
   modules: [
-    '@nuxtjs/pwa', // For offline support
+    '@vite-pwa/nuxt', // For offline support (Nuxt 4 compatible)
     // '@nuxtjs/auth0' // Will be configured when Auth0 integration is implemented
   ],
 
@@ -29,15 +29,14 @@ export default defineNuxtConfig({
   },
 
   // PWA configuration for offline support
+  // Minimal configuration to avoid initialization errors
+  // Will be fully configured when offline support is implemented
   pwa: {
-    // Will be configured when offline support is implemented
-    // manifest: {
-    //   name: 'BCC Events',
-    //   short_name: 'BCC Events',
-    //   theme_color: '#ffffff',
-    // },
-    // workbox: {
-    //   // Service worker configuration
-    // },
+    registerType: 'autoUpdate',
+    manifest: {
+      name: 'BCC Events',
+      short_name: 'BCC Events',
+      theme_color: '#ffffff',
+    },
   },
 })

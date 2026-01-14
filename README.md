@@ -64,6 +64,26 @@ pnpm migrate
 
 See [QUICK_START.md](./QUICK_START.md) for more details.
 
+### Testing
+
+This project maintains a strict unit test culture with separate pipelines for components and API/business logic.
+
+**Quick Start:**
+```bash
+# Run all tests
+pnpm test
+
+# Run component tests only
+pnpm test:components
+
+# Run API tests only
+pnpm test:api
+```
+
+For detailed testing documentation, see:
+- [TESTING.md](./TESTING.md) - Complete testing guide
+- [TESTING_QUICK_START.md](./TESTING_QUICK_START.md) - Quick reference
+
 ### Infrastructure Deployment
 
 For deploying to Google Cloud Platform, see the [infrastructure documentation](./infra/README.md) and [deployment guide](./infra/DEPLOYMENT.md).
