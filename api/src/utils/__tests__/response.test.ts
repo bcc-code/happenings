@@ -5,8 +5,8 @@
  * To run: bun test src/utils/__tests__/response.test.ts
  */
 
-import { describe, it, expect, beforeAll } from 'bun:test';
-import { error, unauthorized, forbidden } from '../response';
+import { beforeAll, describe, expect, it } from 'bun:test';
+import { error, forbidden, unauthorized } from '../response';
 
 // Import test setup if needed
 // This ensures test environment is configured

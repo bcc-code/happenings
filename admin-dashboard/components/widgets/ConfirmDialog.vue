@@ -6,8 +6,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import ConfirmDialog from 'primevue/confirmdialog'
+import ConfirmDialog from 'primevue/confirmdialog';
+import { computed } from 'vue';
 
 export interface ConfirmDialogProps {
   group?: string

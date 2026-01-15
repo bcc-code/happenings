@@ -5,9 +5,9 @@
  * Supports parent-child relationships for relationship changes
  */
 
-import type { AfterEventContext } from '../types';
-import { createAuditLog, calculateDelta, type AuditLogData } from '../../utils/audit';
+import { calculateDelta, createAuditLog, type AuditLogData } from '../../utils/audit';
 import { eventEmitter } from '../emitter';
+import type { AfterEventContext } from '../types';
 
 /**
  * Audit logging handler for after events

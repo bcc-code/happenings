@@ -3,7 +3,7 @@
  * This file runs before all tests
  */
 
-import { beforeEach, afterEach } from 'bun:test';
+import { afterEach, beforeEach } from 'bun:test';
 
 // Global test setup
 beforeEach(() => {

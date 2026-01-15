@@ -14,4 +14,7 @@ import { ConfirmDialog, Toast } from '~/components/widgets';
 <style>
 /* Global styles */
 /* Design tokens from @bcc-code/design-tokens will be applied here */
+* {
+  font-family: 'Archivo', sans-serif;
+}
 </style>

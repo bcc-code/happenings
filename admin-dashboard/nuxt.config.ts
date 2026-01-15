@@ -1,3 +1,5 @@
+import BCCPreset from '@bcc-code/design-tokens/primevue'
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
@@ -8,17 +10,37 @@ export default defineNuxtConfig({
   modules: [
     // PrimeVue is configured via plugin instead of module
     // '@nuxtjs/auth0' // Will be configured when Auth0 integration is implemented
+    '@primevue/nuxt-module'
   ],
 
   css: [
-    'primevue/resources/themes/lara-light-blue/theme.css',
-    'primevue/resources/primevue.min.css',
     'primeicons/primeicons.css',
+    'https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,100..900;1,100..900&family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=IBM+Plex+Serif:wght@400;600&display=swap',
+    '@bcc-code/design-tokens/primevue/overrides'
   ],
+
+  primevue: {
+    options: {
+      theme: {
+        preset: BCCPreset,
+        options: {
+          darkModeSelector: '.dark',
+          cssLayer: {
+            name: 'primevue',
+            order: 'theme, base, primevue, custom'
+          }
+        }
+      },
+    },
+  },
 
   devServer: {
     port: 9002,
   },
+
+  plugins: [
+    '~/plugins/globals.ts',
+  ],
 
   vite: {
     server: {

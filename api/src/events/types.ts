@@ -6,8 +6,8 @@
  * - After events (non-blocking, after transaction commits)
  */
 
-import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import type * as schema from '../db/schema';
 
 /**

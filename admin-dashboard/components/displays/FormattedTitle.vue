@@ -8,8 +8,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import Badge from 'primevue/badge'
+import { computed } from 'vue'
 
 export interface FormattedTitleProps {
   title: string

@@ -13,8 +13,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
 import Button from 'primevue/button'
+import { computed, ref } from 'vue'
 
 export interface JsonProps {
   value: any

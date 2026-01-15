@@ -7,9 +7,9 @@
  */
 
 import { mount, VueWrapper } from '@vue/test-utils';
-import { ComponentPublicInstance } from 'vue';
-import { vi } from 'vitest';
 import PrimeVue from 'primevue/config';
+import { vi } from 'vitest';
+import { ComponentPublicInstance } from 'vue';
 
 /**
  * Custom mount function with common setup

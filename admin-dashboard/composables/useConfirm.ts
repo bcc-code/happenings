@@ -1,4 +1,4 @@
-import { useConfirm } from 'primevue/useconfirm'
+import { useConfirm as usePrimeConfirm } from 'primevue/useconfirm'
 
 export interface ConfirmOptions {
   message?: string
@@ -36,7 +36,7 @@ export interface ConfirmOptions {
  * ```
  */
 export function useConfirm() {
-  const confirm = useConfirm()
+  const confirm = usePrimeConfirm()
 
   const require = (options: ConfirmOptions & {
     accept?: () => void | Promise<void>

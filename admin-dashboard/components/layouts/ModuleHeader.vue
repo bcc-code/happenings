@@ -54,11 +54,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import Breadcrumb from 'primevue/breadcrumb'
 import Button from 'primevue/button'
-import SplitButton from 'primevue/splitbutton'
 import type { MenuItem } from 'primevue/menuitem'
+import SplitButton from 'primevue/splitbutton'
+import { computed } from 'vue'
 import type { BreadcrumbItem } from '../widgets/types'
 
 export interface ModuleHeaderProps {

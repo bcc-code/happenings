@@ -43,10 +43,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import SelectButton from 'primevue/selectbutton'
+import { computed, ref } from 'vue'
 import { FormBuilder, createEventFormSchema } from '~/components/interfaces'
 import type { FormSchema, RelationshipData } from '~/components/interfaces/form-builder/types'
-import SelectButton from 'primevue/selectbutton'
 
 // Schema options
 const schemaOptions = [

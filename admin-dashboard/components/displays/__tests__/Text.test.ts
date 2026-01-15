@@ -3,8 +3,8 @@
  * Demonstrates best practices for component testing
  */
 
-import { describe, it, expect } from 'vitest';
 import { mount } from '@vue/test-utils';
+import { describe, expect, it } from 'vitest';
 import Text from '../Text.vue';
 
 describe('Text Display Component', () => {

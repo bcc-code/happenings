@@ -5,12 +5,11 @@
  * and parent-child relationship support
  */
 
-import { db } from '../db/client';
-import { auditLogs } from '../db/schema';
-import { eq } from 'drizzle-orm';
-import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import { db } from '../db/client';
 import type * as schema from '../db/schema';
+import { auditLogs } from '../db/schema';
 
 export type EventOperation = 'create' | 'update' | 'delete';
 

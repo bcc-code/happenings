@@ -4,16 +4,16 @@
  * Creates event contexts with proper database connections for transactions
  */
 
-import type {
-  BeforeEventContext,
-  AfterEventContext,
-  EventMetadata,
-  EventOperation,
-} from './types';
-import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
-import type * as schema from '../db/schema';
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { db } from '../db/client';
+import type * as schema from '../db/schema';
+import type {
+    AfterEventContext,
+    BeforeEventContext,
+    EventMetadata,
+    EventOperation,
+} from './types';
 
 /**
  * Create a before event context

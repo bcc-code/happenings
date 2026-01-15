@@ -5,9 +5,9 @@
  * These examples can be used as templates for your own event handlers.
  */
 
-import { eventEmitter } from './emitter';
-import { events, users, registrations } from '../db/schema';
 import { eq } from 'drizzle-orm';
+import { events, users } from '../db/schema';
+import { eventEmitter } from './emitter';
 
 // ============================================================================
 // Example 1: Auto-generate Slug on Event Create

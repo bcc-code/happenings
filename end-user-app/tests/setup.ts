@@ -6,7 +6,6 @@
  * is automatically set up. This file is for additional mocks and setup.
  */
 
-import { vi } from 'vitest';
 import '@testing-library/jest-dom';
 
 // Note: With @nuxt/test-utils, Nuxt composables are automatically available

@@ -5,13 +5,12 @@
  */
 
 import type {
-  EventOperation,
-  BeforeEventContext,
-  AfterEventContext,
-  BeforeEventHandler,
-  AfterEventHandler,
-  EventHandlerRegistration,
-  EventMetadata,
+    AfterEventContext,
+    AfterEventHandler,
+    BeforeEventContext,
+    BeforeEventHandler,
+    EventHandlerRegistration,
+    EventOperation
 } from './types';
 
 /**

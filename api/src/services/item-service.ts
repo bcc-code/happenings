@@ -9,13 +9,13 @@
  * - Preventing "updated" events when nothing changed
  */
 
-import type { PostgresJsDatabase } from 'drizzle-orm/pg-core';
-import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
-import type * as schema from '../db/schema';
 import { eq } from 'drizzle-orm';
-import { calculateDelta } from '../utils/audit';
-import { emitCreate, emitUpdate, emitDelete } from '../events/helpers';
+import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
+import type { PostgresJsDatabase } from 'drizzle-orm/pg-core';
+import type * as schema from '../db/schema';
+import { emitCreate, emitDelete, emitUpdate } from '../events/helpers';
 import type { EventMetadata } from '../events/types';
+import { calculateDelta } from '../utils/audit';
 
 type Database = PostgresJsDatabase<typeof schema> | BunSQLiteDatabase<typeof schema>;
 
