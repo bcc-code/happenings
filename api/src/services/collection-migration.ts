@@ -3,12 +3,159 @@
  * Dynamically generates and runs migrations for new collections
  */
 
-import { db, sql } from '../db/client';
-import { collections, collectionFields } from '../db/schema';
 import { eq } from 'drizzle-orm';
-import { config } from '../config';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
+import { config } from '../config';
+import { db, sql } from '../db/client';
+import type * as schema from '../db/schema';
+import { collectionFields, collections } from '../db/schema';
+
+type SqliteCollectionRow = {
+  id: string
+  name: string
+  slug: string
+  description: string | null
+  tableName: string
+  isActive: number | null
+  createdAt: string | null
+  updatedAt: string | null
+  createdBy: string | null
+}
+
+type SqliteCollectionFieldRow = {
+  id: string
+  collectionId: string
+  name: string
+  slug: string
+  type: string
+  isRequired: number | null
+  isUnique: number | null
+  defaultValue: string | null
+  validation: string | null
+  displayOrder: number | null
+  createdAt: string | null
+  updatedAt: string | null
+}
+
+function isSqlite(): boolean {
+  return config.databaseType === 'sqlite';
+}
+
+function isPostgres(): boolean {
+  return config.databaseType === 'postgres' ||
+    (config.databaseUrl?.startsWith('postgres') ?? false);
+}
+
+function normalizeSqliteValue(value: any) {
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === 'object' && value !== null) return JSON.stringify(value);
+  return value;
+}
+
+function ensureCollectionMetadataTables() {
+  if (!isSqlite()) return;
+
+  // `sql` is a Bun SQLite Database when `DB_TYPE=sqlite`.
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  const sqlite = sql as any;
+
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS "Collection" (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      slug TEXT NOT NULL,
+      description TEXT,
+      tableName TEXT NOT NULL,
+      isActive INTEGER DEFAULT 1,
+      createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
+      createdBy TEXT
+    );
+  `);
+
+  sqlite.exec(`CREATE UNIQUE INDEX IF NOT EXISTS collection_slug_unique ON "Collection"(slug);`);
+  sqlite.exec(`CREATE UNIQUE INDEX IF NOT EXISTS collection_tablename_unique ON "Collection"(tableName);`);
+  sqlite.exec(`CREATE INDEX IF NOT EXISTS collection_slug_idx ON "Collection"(slug);`);
+  sqlite.exec(`CREATE INDEX IF NOT EXISTS collection_tablename_idx ON "Collection"(tableName);`);
+
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS "CollectionField" (
+      id TEXT PRIMARY KEY,
+      collectionId TEXT NOT NULL,
+      name TEXT NOT NULL,
+      slug TEXT NOT NULL,
+      type TEXT NOT NULL,
+      isRequired INTEGER DEFAULT 0,
+      isUnique INTEGER DEFAULT 0,
+      defaultValue TEXT,
+      validation TEXT,
+      displayOrder INTEGER DEFAULT 0,
+      createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  sqlite.exec(`CREATE INDEX IF NOT EXISTS collectionfield_collectionid_idx ON "CollectionField"(collectionId);`);
+  sqlite.exec(`CREATE INDEX IF NOT EXISTS collectionfield_slug_idx ON "CollectionField"(slug);`);
+  sqlite.exec(`CREATE UNIQUE INDEX IF NOT EXISTS collectionfield_collection_slug_unique ON "CollectionField"(collectionId, slug);`);
+}
+
+function sqliteDb() {
+  if (!isSqlite()) {
+    throw new Error('sqliteDb() called when not using sqlite')
+  }
+  return sql as any
+}
+
+function postgresDb() {
+  if (isSqlite()) {
+    throw new Error('postgresDb() called when using sqlite')
+  }
+  return db as unknown as PostgresJsDatabase<typeof schema>
+}
+
+function parseSqliteBool(value: unknown): boolean {
+  return value === 1 || value === true || value === '1' || value === 'true'
+}
+
+function mapSqliteField(row: SqliteCollectionFieldRow) {
+  return {
+    ...row,
+    isRequired: parseSqliteBool(row.isRequired),
+    isUnique: parseSqliteBool(row.isUnique),
+    displayOrder: row.displayOrder ?? 0,
+    validation: row.validation ? safeJsonParse(row.validation) : null,
+  }
+}
+
+function safeJsonParse(value: string) {
+  try {
+    return JSON.parse(value)
+  } catch {
+    return value
+  }
+}
+
+function sqliteGetFields(collectionId: string) {
+  const sqlite = sqliteDb()
+  const stmt = sqlite.prepare(
+    `SELECT * FROM "CollectionField" WHERE collectionId = ? ORDER BY displayOrder ASC`
+  )
+  const rows = stmt.all(collectionId) as SqliteCollectionFieldRow[]
+  return rows.map(mapSqliteField)
+}
+
+function sqliteGetCollectionByIdOrSlug(idOrSlug: string) {
+  const sqlite = sqliteDb()
+  const stmt = sqlite.prepare(`SELECT * FROM "Collection" WHERE id = ? OR slug = ? LIMIT 1`)
+  const row = stmt.get(idOrSlug, idOrSlug) as SqliteCollectionRow | null
+  if (!row) return null
+  return {
+    ...row,
+    isActive: parseSqliteBool(row.isActive),
+    fields: sqliteGetFields(row.id),
+  }
+}
 
 interface CollectionField {
   name: string;
@@ -68,11 +215,75 @@ export async function createCollection(
   createdBy: string
 ) {
   const tableName = generateTableName(input.slug);
-  const isPostgres = process.env.DB_TYPE !== 'sqlite' && 
-    (process.env.DATABASE_URL?.startsWith('postgres') ?? true);
+  const isPostgresDb = isPostgres();
+
+  if (isSqlite()) {
+    const sqlite = sqliteDb()
+    const existingStmt = sqlite.prepare(
+      `SELECT id FROM "Collection" WHERE slug = ? OR tableName = ? LIMIT 1`
+    )
+    const existing = existingStmt.get(input.slug, tableName) as { id: string } | null
+    if (existing) {
+      throw new Error(`Collection with slug "${input.slug}" or table "${tableName}" already exists`)
+    }
+
+    const collectionId = crypto.randomUUID()
+
+    sqlite.exec('BEGIN')
+    try {
+      const insertCollection = sqlite.prepare(
+        `INSERT INTO "Collection" (id, name, slug, description, tableName, isActive, createdBy)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
+      )
+      insertCollection.run(
+        collectionId,
+        input.name,
+        input.slug,
+        input.description ?? null,
+        tableName,
+        1,
+        createdBy
+      )
+
+      const insertField = sqlite.prepare(
+        `INSERT INTO "CollectionField"
+          (id, collectionId, name, slug, type, isRequired, isUnique, defaultValue, validation, displayOrder)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      )
+
+      input.fields.forEach((field, index) => {
+        insertField.run(
+          crypto.randomUUID(),
+          collectionId,
+          field.name,
+          field.slug,
+          field.type,
+          field.isRequired ? 1 : 0,
+          field.isUnique ? 1 : 0,
+          field.defaultValue ?? null,
+          null,
+          index
+        )
+      })
+
+      await createCollectionTable(tableName, input.fields, false)
+      sqlite.exec('COMMIT')
+    } catch (e) {
+      sqlite.exec('ROLLBACK')
+      throw e
+    }
+
+    const full = sqliteGetCollectionByIdOrSlug(collectionId)
+    if (!full) {
+      throw new Error('Failed to load created collection')
+    }
+    return full as any
+  }
+
+  const pgDb = postgresDb()
 
   // Check if collection with same slug or table name already exists
-  const existing = await db.query.collections.findFirst({
+  const existing = await pgDb.query.collections.findFirst({
     where: (collections, { or, eq }) => 
       or(
         eq(collections.slug, input.slug),
@@ -87,7 +298,7 @@ export async function createCollection(
   // Start transaction
   try {
     // Create collection record
-    const [collection] = await db
+    const [collection] = await pgDb
       .insert(collections)
       .values({
         name: input.name,
@@ -110,15 +321,17 @@ export async function createCollection(
       displayOrder: index,
     }));
 
-    await db.insert(collectionFields).values(fieldRecords);
+    await pgDb.insert(collectionFields).values(fieldRecords);
 
     // Generate and execute migration SQL
-    await createCollectionTable(tableName, input.fields, isPostgres);
+    await createCollectionTable(tableName, input.fields, isPostgresDb);
 
-    return collection;
+    // Return the full collection including fields (matches GET /collections shape)
+    const full = await getCollectionByIdOrSlug(collection.id)
+    return (full ?? collection) as any
   } catch (error) {
     // Rollback: delete collection if table creation fails
-    await db.delete(collections).where(eq(collections.slug, input.slug));
+    await pgDb.delete(collections).where(eq(collections.slug, input.slug));
     throw error;
   }
 }
@@ -181,12 +394,13 @@ async function createCollectionTable(
       await sql.unsafe(indexSQL);
     }
   } else {
-    // SQLite - use prepare/run for DDL
-    sql.exec(createTableSQL);
+    // SQLite - use sqliteDb() to get the SQLite database instance
+    const sqlite = sqliteDb();
+    sqlite.exec(createTableSQL);
     // Execute index creation separately if exists
     const indexSQL = columns.find(c => c.startsWith('CREATE INDEX'));
     if (indexSQL) {
-      sql.exec(indexSQL);
+      sqlite.exec(indexSQL);
     }
   }
 }
@@ -195,7 +409,19 @@ async function createCollectionTable(
  * Get all collections
  */
 export async function getAllCollections() {
-  return await db.query.collections.findMany({
+  if (isSqlite()) {
+    const sqlite = sqliteDb()
+    const rows = sqlite
+      .prepare(`SELECT * FROM "Collection" ORDER BY name ASC`)
+      .all() as SqliteCollectionRow[]
+    return rows.map((row) => ({
+      ...row,
+      isActive: parseSqliteBool(row.isActive),
+      fields: sqliteGetFields(row.id),
+    })) as any
+  }
+  const pgDb = postgresDb()
+  return await pgDb.query.collections.findMany({
     with: {
       fields: {
         orderBy: (fields, { asc }) => [asc(fields.displayOrder)],
@@ -209,7 +435,11 @@ export async function getAllCollections() {
  * Get collection by ID or slug
  */
 export async function getCollectionByIdOrSlug(idOrSlug: string) {
-  const collection = await db.query.collections.findFirst({
+  if (isSqlite()) {
+    return sqliteGetCollectionByIdOrSlug(idOrSlug) as any
+  }
+  const pgDb = postgresDb()
+  const collection = await pgDb.query.collections.findFirst({
     where: (collections, { or, eq }) => 
       or(
         eq(collections.id, idOrSlug),
@@ -223,14 +453,6 @@ export async function getCollectionByIdOrSlug(idOrSlug: string) {
   });
 
   return collection;
-}
-
-/**
- * Helper to check if using PostgreSQL
- */
-function isPostgres(): boolean {
-  return config.databaseType === 'postgres' || 
-    (config.databaseUrl?.startsWith('postgres') ?? false);
 }
 
 /**
@@ -292,10 +514,16 @@ export async function getCollectionItem(tableName: string, id: string) {
  * Create a new collection item
  */
 export async function createCollectionItem(tableName: string, data: Record<string, any>) {
-  const fields = Object.keys(data).filter(k => k !== 'id');
+  const isPostgresDb = isPostgres();
+
+  if (!isPostgresDb && !data.id) {
+    data.id = crypto.randomUUID();
+  }
+
+  const fields = Object.keys(data).filter(k => (isPostgresDb ? k !== 'id' : true));
   const fieldList = fields.join(', ');
   
-  if (isPostgres()) {
+  if (isPostgresDb) {
     const values = fields.map((_, i) => `$${i + 1}`).join(', ');
     const query = `INSERT INTO "${tableName}" (${fieldList}) VALUES (${values}) RETURNING *`;
     const result = await sql.unsafe(query, fields.map(f => data[f]));
@@ -305,7 +533,7 @@ export async function createCollectionItem(tableName: string, data: Record<strin
     const placeholders = fields.map(() => '?').join(', ');
     const query = `INSERT INTO "${tableName}" (${fieldList}) VALUES (${placeholders}) RETURNING *`;
     const stmt = sql.prepare(query);
-    const result = stmt.all(...fields.map(f => data[f])) as any[];
+    const result = stmt.all(...fields.map(f => normalizeSqliteValue(data[f]))) as any[];
     return result[0] || null;
   }
 }
@@ -318,9 +546,10 @@ export async function updateCollectionItem(
   id: string,
   data: Record<string, any>
 ) {
+  const isPostgresDb = isPostgres();
   const fields = Object.keys(data).filter(k => k !== 'id' && k !== 'created_at');
   
-  if (isPostgres()) {
+  if (isPostgresDb) {
     const setClause = fields.map((f, i) => `${f} = $${i + 1}`).join(', ');
     const query = `UPDATE "${tableName}" SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = $${fields.length + 1} RETURNING *`;
     const result = await sql.unsafe(query, [...fields.map(f => data[f]), id]);
@@ -330,7 +559,7 @@ export async function updateCollectionItem(
     const setClause = fields.map((f, i) => `${f} = ?`).join(', ');
     const query = `UPDATE "${tableName}" SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = ? RETURNING *`;
     const stmt = sql.prepare(query);
-    const result = stmt.all(...fields.map(f => data[f]), id) as any[];
+    const result = stmt.all(...fields.map(f => normalizeSqliteValue(data[f])), id) as any[];
     return result[0] || null;
   }
 }

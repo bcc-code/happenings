@@ -1,39 +1,12 @@
 /**
- * @swagger
- * /admin/events:
- *   get:
- *     summary: List all events (Admin)
- *     tags: [Admin]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: header
- *         name: X-Tenant-ID
- *         required: true
- *         schema:
- *           type: string
- *         description: Tenant ID
- *     responses:
- *       200:
- *         description: List of events
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Event'
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
- *       403:
- *         $ref: '#/components/responses/Forbidden'
+ * Super-admin event management endpoints (tenant chosen via path param)
  */
+
+import type { Context } from 'elysia';
 import type { AuthenticatedContext } from '../../middleware/auth';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq } from 'drizzle-orm';
 import { db } from '../../db/client';
-import { events, registrations } from '../../db/schema';
+import { events, registrations, tenants } from '../../db/schema';
 import { emitCreate, emitDelete, emitUpdate } from '../../events/helpers';
 import { error, success } from '../../utils/response';
 
@@ -50,109 +23,57 @@ type EventInput = {
   globalAccessRules?: unknown | null;
 };
 
-export async function listEvents({ store }: AuthenticatedContext) {
+async function requireTenant(tenantId: string) {
+  const tenant = await db.query.tenants.findFirst({
+    where: eq(tenants.id, tenantId),
+  });
+  return tenant;
+}
+
+export async function listTenantEvents({ params }: Context) {
   try {
-    const tenantId = store.user?.tenantId;
-    
-    if (!tenantId) {
-      return error('Tenant ID required', 'TENANT_ID_REQUIRED', 400);
-    }
+    const { tenantId } = params as { tenantId: string };
+    const tenant = await requireTenant(tenantId);
+    if (!tenant) return error('Tenant not found', 'NOT_FOUND', 404);
 
     const rows = await db.query.events.findMany({
       where: eq(events.tenantId, tenantId),
       orderBy: [desc(events.startDate)],
     });
 
-    return success(rows);
+    return success({ tenant, events: rows });
   } catch (err) {
-    console.error('Error fetching events:', err);
+    console.error('Error listing tenant events:', err);
     return error('Internal server error', 'INTERNAL_ERROR', 500);
   }
 }
 
-/**
- * @swagger
- * /admin/events/{id}:
- *   get:
- *     summary: Get an event (Admin)
- *     tags: [Admin]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: header
- *         name: X-Tenant-ID
- *         required: true
- *         schema:
- *           type: string
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Event
- */
-export async function getEvent({ params, store }: AuthenticatedContext) {
+export async function getTenantEvent({ params }: Context) {
   try {
-    const tenantId = store.user?.tenantId;
-    const { id } = params as { id: string };
-
-    if (!tenantId) {
-      return error('Tenant ID required', 'TENANT_ID_REQUIRED', 400);
-    }
+    const { tenantId, id } = params as { tenantId: string; id: string };
+    const tenant = await requireTenant(tenantId);
+    if (!tenant) return error('Tenant not found', 'NOT_FOUND', 404);
 
     const row = await db.query.events.findFirst({
       where: and(eq(events.id, id), eq(events.tenantId, tenantId)),
     });
+    if (!row) return error('Event not found', 'NOT_FOUND', 404);
 
-    if (!row) {
-      return error('Event not found', 'NOT_FOUND', 404);
-    }
-
-    return success(row);
+    return success({ tenant, event: row });
   } catch (err) {
-    console.error('Error fetching event:', err);
+    console.error('Error fetching tenant event:', err);
     return error('Internal server error', 'INTERNAL_ERROR', 500);
   }
 }
 
-/**
- * @swagger
- * /admin/events:
- *   post:
- *     summary: Create an event (Admin)
- *     tags: [Admin]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: header
- *         name: X-Tenant-ID
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [title, startDate, endDate]
- *     responses:
- *       201:
- *         description: Event created
- */
-export async function createEvent({ body, store, request }: AuthenticatedContext) {
+export async function createTenantEvent({ params, body, store, request }: AuthenticatedContext) {
   try {
-    const tenantId = store.user?.tenantId;
-    const userId = store.user?.id;
+    const { tenantId } = params as { tenantId: string };
+    const tenant = await requireTenant(tenantId);
+    if (!tenant) return error('Tenant not found', 'NOT_FOUND', 404);
 
-    if (!tenantId) {
-      return error('Tenant ID required', 'TENANT_ID_REQUIRED', 400);
-    }
-    if (!userId) {
-      return error('User not found', 'UNAUTHORIZED', 401);
-    }
+    const userId = store.user?.id;
+    if (!userId) return error('User not found', 'UNAUTHORIZED', 401);
 
     const input = (body || {}) as Partial<EventInput>;
     if (!input.title || !input.startDate || !input.endDate) {
@@ -260,48 +181,31 @@ export async function createEvent({ body, store, request }: AuthenticatedContext
         const row = await txDb.query.events.findFirst({
           where: and(eq(events.id, payload.id), eq(events.tenantId, payload.tenantId)),
         });
-
         if (!row) throw new Error('Failed to create event');
         return row;
       }
     );
 
-    return success(created, 201);
+    return success({ tenant, event: created }, 201);
   } catch (err: any) {
-    console.error('Error creating event:', err);
+    console.error('Error creating tenant event:', err);
     return error(err?.message || 'Internal server error', 'INTERNAL_ERROR', 500);
   }
 }
 
-/**
- * @swagger
- * /admin/events/{id}:
- *   put:
- *     summary: Update an event (Admin)
- *     tags: [Admin]
- *   patch:
- *     summary: Update an event (Admin)
- *     tags: [Admin]
- */
-export async function updateEvent({ params, body, store, request }: AuthenticatedContext) {
+export async function updateTenantEvent({ params, body, store, request }: AuthenticatedContext) {
   try {
-    const tenantId = store.user?.tenantId;
-    const userId = store.user?.id;
-    const { id } = params as { id: string };
+    const { tenantId, id } = params as { tenantId: string; id: string };
+    const tenant = await requireTenant(tenantId);
+    if (!tenant) return error('Tenant not found', 'NOT_FOUND', 404);
 
-    if (!tenantId) {
-      return error('Tenant ID required', 'TENANT_ID_REQUIRED', 400);
-    }
-    if (!userId) {
-      return error('User not found', 'UNAUTHORIZED', 401);
-    }
+    const userId = store.user?.id;
+    if (!userId) return error('User not found', 'UNAUTHORIZED', 401);
 
     const existing = await db.query.events.findFirst({
       where: and(eq(events.id, id), eq(events.tenantId, tenantId)),
     });
-    if (!existing) {
-      return error('Event not found', 'NOT_FOUND', 404);
-    }
+    if (!existing) return error('Event not found', 'NOT_FOUND', 404);
 
     const input = (body || {}) as Partial<EventInput>;
 
@@ -318,18 +222,12 @@ export async function updateEvent({ params, body, store, request }: Authenticate
     // Date validation
     const startDate = input.startDate ? new Date(input.startDate) : undefined;
     const endDate = input.endDate ? new Date(input.endDate) : undefined;
-    if (startDate && Number.isNaN(startDate.getTime())) {
-      return error('Invalid startDate', 'VALIDATION_ERROR', 400);
-    }
-    if (endDate && Number.isNaN(endDate.getTime())) {
-      return error('Invalid endDate', 'VALIDATION_ERROR', 400);
-    }
+    if (startDate && Number.isNaN(startDate.getTime())) return error('Invalid startDate', 'VALIDATION_ERROR', 400);
+    if (endDate && Number.isNaN(endDate.getTime())) return error('Invalid endDate', 'VALIDATION_ERROR', 400);
 
     const nextStart = startDate ?? existing.startDate;
     const nextEnd = endDate ?? existing.endDate;
-    if (nextEnd < nextStart) {
-      return error('endDate must be after startDate', 'VALIDATION_ERROR', 400);
-    }
+    if (nextEnd < nextStart) return error('endDate must be after startDate', 'VALIDATION_ERROR', 400);
 
     // Capacity validation (if provided)
     if (input.capacity !== null && input.capacity !== undefined) {
@@ -394,10 +292,7 @@ export async function updateEvent({ params, body, store, request }: Authenticate
       },
       async (tx, payload) => {
         const txDb = tx as any;
-        const updateValues: Record<string, any> = {
-          updatedAt: new Date(),
-        };
-
+        const updateValues: Record<string, any> = { updatedAt: new Date() };
         if (payload.title !== undefined) updateValues.title = payload.title;
         if (payload.description !== undefined) updateValues.description = payload.description;
         if (payload.startDate !== undefined) updateValues.startDate = payload.startDate;
@@ -429,41 +324,27 @@ export async function updateEvent({ params, body, store, request }: Authenticate
       }
     );
 
-    // Strip audit context from response
     const { _auditContext, ...clean } = updated as any;
-    return success(clean);
+    return success({ tenant, event: clean });
   } catch (err: any) {
-    console.error('Error updating event:', err);
+    console.error('Error updating tenant event:', err);
     return error(err?.message || 'Internal server error', 'INTERNAL_ERROR', 500);
   }
 }
 
-/**
- * @swagger
- * /admin/events/{id}:
- *   delete:
- *     summary: Delete an event (Admin)
- *     tags: [Admin]
- */
-export async function deleteEvent({ params, store, request }: AuthenticatedContext) {
+export async function deleteTenantEvent({ params, store, request }: AuthenticatedContext) {
   try {
-    const tenantId = store.user?.tenantId;
-    const userId = store.user?.id;
-    const { id } = params as { id: string };
+    const { tenantId, id } = params as { tenantId: string; id: string };
+    const tenant = await requireTenant(tenantId);
+    if (!tenant) return error('Tenant not found', 'NOT_FOUND', 404);
 
-    if (!tenantId) {
-      return error('Tenant ID required', 'TENANT_ID_REQUIRED', 400);
-    }
-    if (!userId) {
-      return error('User not found', 'UNAUTHORIZED', 401);
-    }
+    const userId = store.user?.id;
+    if (!userId) return error('User not found', 'UNAUTHORIZED', 401);
 
     const existing = await db.query.events.findFirst({
       where: and(eq(events.id, id), eq(events.tenantId, tenantId)),
     });
-    if (!existing) {
-      return error('Event not found', 'NOT_FOUND', 404);
-    }
+    if (!existing) return error('Event not found', 'NOT_FOUND', 404);
 
     await emitDelete(
       'events',
@@ -484,33 +365,21 @@ export async function deleteEvent({ params, store, request }: AuthenticatedConte
 
     return success({ deleted: true });
   } catch (err: any) {
-    console.error('Error deleting event:', err);
+    console.error('Error deleting tenant event:', err);
     return error(err?.message || 'Internal server error', 'INTERNAL_ERROR', 500);
   }
 }
 
-/**
- * @swagger
- * /admin/events/{id}/registrations:
- *   get:
- *     summary: List registrations for an event (Admin)
- *     tags: [Admin]
- */
-export async function listEventRegistrations({ params, store }: AuthenticatedContext) {
+export async function listTenantEventRegistrations({ params }: Context) {
   try {
-    const tenantId = store.user?.tenantId;
-    const { id } = params as { id: string };
-
-    if (!tenantId) {
-      return error('Tenant ID required', 'TENANT_ID_REQUIRED', 400);
-    }
+    const { tenantId, id } = params as { tenantId: string; id: string };
+    const tenant = await requireTenant(tenantId);
+    if (!tenant) return error('Tenant not found', 'NOT_FOUND', 404);
 
     const event = await db.query.events.findFirst({
       where: and(eq(events.id, id), eq(events.tenantId, tenantId)),
     });
-    if (!event) {
-      return error('Event not found', 'NOT_FOUND', 404);
-    }
+    if (!event) return error('Event not found', 'NOT_FOUND', 404);
 
     const rows = await db.query.registrations.findMany({
       where: and(eq(registrations.tenantId, tenantId), eq(registrations.eventId, id)),
@@ -528,12 +397,10 @@ export async function listEventRegistrations({ params, store }: AuthenticatedCon
       orderBy: (registrations, { desc }) => [desc(registrations.registeredAt)],
     });
 
-    return success({
-      event,
-      registrations: rows,
-    });
+    return success({ tenant, event, registrations: rows });
   } catch (err: any) {
-    console.error('Error listing event registrations:', err);
+    console.error('Error listing tenant event registrations:', err);
     return error(err?.message || 'Internal server error', 'INTERNAL_ERROR', 500);
   }
 }
+

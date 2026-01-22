@@ -54,9 +54,11 @@
 
 <script setup lang="ts">
 import type { MenuItem } from 'primevue/menuitem'
-import { computed } from 'vue'
+import { computed, useSlots } from 'vue'
 import type { BreadcrumbItem } from '../widgets/types'
 import ModuleHeader from './ModuleHeader.vue'
+
+const slots = useSlots()
 
 export interface ModuleContainerProps {
   // Header props (when using default header)
@@ -118,9 +120,10 @@ const containerClass = computed(() => {
 })
 
 const bodyClass = computed(() => {
+  const hasSidebar = props.sidebarVisible || !!slots.sidebar
   return {
-    'module-container__body--with-sidebar': props.sidebarVisible || !!props.$slots.sidebar,
-    [`module-container__body--sidebar-${props.sidebarPosition}`]: props.sidebarVisible || !!props.$slots.sidebar,
+    'module-container__body--with-sidebar': hasSidebar,
+    [`module-container__body--sidebar-${props.sidebarPosition}`]: hasSidebar,
   }
 })
 
@@ -133,7 +136,7 @@ const sidebarClass = computed(() => {
 
 const mainClass = computed(() => {
   return {
-    'module-container__main--with-sidebar': props.sidebarVisible || !!props.$slots.sidebar,
+    'module-container__main--with-sidebar': props.sidebarVisible || !!slots.sidebar,
   }
 })
 

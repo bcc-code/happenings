@@ -5,6 +5,7 @@
 import { cors } from '@elysiajs/cors';
 import { Elysia } from 'elysia';
 import { config } from './config';
+import { ensureAllTables } from './db/ensure-tables';
 import { registerAuditLogHandler } from './events/handlers/audit';
 import { handleError } from './middleware/error';
 import { swaggerSpec } from './openapi/config';
@@ -12,6 +13,9 @@ import adminRouter from './routes/admin';
 import superAdminRouter from './routes/admin/super-admin';
 import appRouter from './routes/app';
 import sharedRouter from './routes/shared';
+
+// Ensure all SQLite tables exist at startup
+ensureAllTables();
 
 const app = new Elysia();
 

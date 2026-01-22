@@ -4,7 +4,10 @@
 
 import { Elysia } from 'elysia';
 import { verifyToken, requireAuth, requireUserAccess } from '../../middleware/auth';
+import { tenantContext } from '../../middleware/tenant';
 import { getProfile } from './profile';
+import { getAppEvent, listAppEvents } from './events';
+import { cancelRegistration, createRegistration, listMyRegistrations } from './registrations';
 
 const router = new Elysia();
 
@@ -15,11 +18,20 @@ router.onBeforeHandle(requireAuth);
 // App routes
 router.get('/profile', getProfile);
 
-// Routes that need user access control
-// router.get('/users/:userId', requireUserAccess, getUser);
+// Routes that require tenant context
+router.group('', (app) => {
+  app.onBeforeHandle(tenantContext);
 
-// Add more app routes here
-// router.get('/events', listEvents);
-// router.post('/registrations', createRegistration);
+  // Events
+  app.get('/events', listAppEvents);
+  app.get('/events/:id', getAppEvent);
+
+  // Registrations (self for now)
+  app.get('/registrations', listMyRegistrations);
+  app.post('/registrations', createRegistration);
+  app.post('/registrations/:id/cancel', cancelRegistration);
+
+  return app;
+});
 
 export default router;

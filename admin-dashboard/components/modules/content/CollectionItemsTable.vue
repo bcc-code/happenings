@@ -48,6 +48,12 @@
             v-model="data[fieldName]"
             :binary="true"
           />
+          <Textarea
+            v-else-if="getFieldType(fieldName) === 'json'"
+            v-model="data[fieldName]"
+            rows="5"
+            class="w-full"
+          />
           <InputText
             v-else
             v-model="data[fieldName]"
@@ -90,7 +96,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, watch } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Button from 'primevue/button'
@@ -98,24 +104,15 @@ import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import Calendar from 'primevue/calendar'
 import Checkbox from 'primevue/checkbox'
+import Textarea from 'primevue/textarea'
 import { useToast } from '~/composables/useToast'
 import { useConfirm } from '~/composables/useConfirm'
 import { useSuperAdminAuth } from '~/composables/useSuperAdminAuth'
-
-interface Collection {
-  id: string
-  name: string
-  slug: string
-  fields: Array<{
-    id: string
-    name: string
-    slug: string
-    type: string
-  }>
-}
+import type { Collection, CollectionItem, CollectionFieldType } from './types'
 
 interface Props {
   collection: Collection
+  reloadNonce?: number
 }
 
 const props = defineProps<Props>()
@@ -132,14 +129,62 @@ const loading = ref(false)
 
 const config = useRuntimeConfig()
 
-function getFieldType(fieldSlug: string): string {
-  const field = props.collection.fields.find(f => f.slug === fieldSlug)
-  return field?.type || 'text'
+function getFieldType(fieldSlug: string): CollectionFieldType {
+  const field = props.collection.fields.find((f) => f.slug === fieldSlug)
+  return (field?.type as CollectionFieldType) || 'text'
 }
 
 function formatDate(date: string | Date): string {
   if (!date) return ''
-  return new Date(date).toLocaleDateString()
+  return new Intl.DateTimeFormat('en', { year: 'numeric', month: 'short', day: '2-digit' }).format(
+    typeof date === 'string' ? new Date(date) : date
+  )
+}
+
+function normalizeItemValue(fieldSlug: string, value: unknown) {
+  const fieldType = getFieldType(fieldSlug)
+  if (value === null || value === undefined) return value
+
+  if (fieldType === 'date') {
+    if (value instanceof Date) return value
+    const parsed = new Date(String(value))
+    return Number.isNaN(parsed.getTime()) ? null : parsed
+  }
+
+  if (fieldType === 'number') {
+    if (typeof value === 'number') return value
+    const n = Number(value)
+    return Number.isFinite(n) ? n : null
+  }
+
+  if (fieldType === 'boolean') {
+    if (typeof value === 'boolean') return value
+    if (value === 'true') return true
+    if (value === 'false') return false
+    return Boolean(value)
+  }
+
+  if (fieldType === 'json') {
+    if (typeof value === 'string') return value
+    try {
+      return JSON.stringify(value, null, 2)
+    } catch {
+      return String(value)
+    }
+  }
+
+  return value
+}
+
+function normalizeItems(rawItems: CollectionItem[]) {
+  const fieldSlugs = props.collection.fields.map((f) => f.slug)
+  return rawItems.map((item) => {
+    const next: Record<string, unknown> = { ...item }
+    for (const slug of fieldSlugs) {
+      next[slug] = normalizeItemValue(slug, (item as any)[slug])
+    }
+    return next
+  })
 }
 
 async function loadItems() {
@@ -151,7 +196,7 @@ async function loadItems() {
         headers: auth.getAuthHeaders(),
       }
     )
-    items.value = response.data.items
+    items.value = normalizeItems(response.data.items)
   } catch (error: any) {
     toast.error('Failed to load items', error.message)
   } finally {
@@ -159,10 +204,34 @@ async function loadItems() {
   }
 }
 
+function toApiValue(fieldSlug: string, value: unknown) {
+  const fieldType = getFieldType(fieldSlug)
+  if (fieldType === 'json') {
+    // Prefer sending actual objects/arrays for Postgres JSONB.
+    if (typeof value === 'string') {
+      const trimmed = value.trim()
+      if (trimmed.length === 0) return null
+      try {
+        return JSON.parse(trimmed)
+      } catch {
+        // Let server reject invalid JSON rather than silently corrupting.
+        throw new Error(`Invalid JSON for "${fieldSlug}"`)
+      }
+    }
+  }
+  return value
+}
+
 async function onCellEdit(event: any) {
   const { data, newValue, field } = event
   const updateData: Record<string, any> = {}
-  updateData[field] = newValue
+  try {
+    updateData[field] = toApiValue(field, newValue)
+  } catch (e: any) {
+    toast.error('Invalid value', e?.message || 'Please check your input')
+    await loadItems()
+    return
+  }
 
   try {
     await $fetch(
@@ -224,21 +293,32 @@ async function handleDelete(item: any) {
 }
 
 
-onMounted(() => {
-  loadItems()
-})
+watch(
+  () => props.collection.id,
+  () => {
+    loadItems()
+  },
+  { immediate: true }
+)
+
+watch(
+  () => props.reloadNonce,
+  () => {
+    loadItems()
+  }
+)
 </script>
 
 <style scoped>
 .collection-items-table {
-  padding: 1rem;
+  padding: var(--spacing-md, 1rem);
 }
 
 .table-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: var(--spacing-md, 1rem);
 }
 
 .table-header h2 {

@@ -15,7 +15,6 @@ export default defineNuxtConfig({
 
   css: [
     'primeicons/primeicons.css',
-    'https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,100..900;1,100..900&family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=IBM+Plex+Serif:wght@400;600&display=swap',
     '@bcc-code/design-tokens/primevue/overrides'
   ],
 
@@ -69,7 +68,16 @@ export default defineNuxtConfig({
     {
       path: '~/components',
       pathPrefix: false,
-      ignore: ['**/index.ts'],
+      ignore: ['**/index.ts', '**/types.ts'],
     },
   ],
+
+  imports: {
+    // Exclude PrimeVue's useToast and useConfirm from auto-imports
+    // so our custom composables in composables/ directory are used instead
+    exclude: [
+      'primevue/usetoast',
+      'primevue/useconfirm',
+    ],
+  },
 })

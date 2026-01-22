@@ -15,6 +15,7 @@
       <InputText
         id="slug"
         v-model="form.slug"
+        @input="slugManuallyEdited = true"
         placeholder="e.g., blog-posts"
         class="w-full"
       />
@@ -73,17 +74,17 @@
         <div class="field-options">
           <Checkbox
             v-model="field.isRequired"
-            input-id="required"
+            :input-id="`required-${index}`"
             :binary="true"
           />
-          <label for="required" class="ml-2">Required</label>
+          <label :for="`required-${index}`" class="ml-2">Required</label>
           <Checkbox
             v-model="field.isUnique"
-            input-id="unique"
+            :input-id="`unique-${index}`"
             :binary="true"
             class="ml-4"
           />
-          <label for="unique" class="ml-2">Unique</label>
+          <label :for="`unique-${index}`" class="ml-2">Unique</label>
         </div>
       </div>
     </div>
@@ -104,7 +105,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
 import Button from 'primevue/button'
@@ -121,6 +122,8 @@ const emit = defineEmits<{
 const toast = useToast()
 const auth = useSuperAdminAuth()
 const loading = ref(false)
+const slugManuallyEdited = ref(false)
+const lastAutoSlug = ref('')
 
 const fieldTypes = [
   { label: 'Text', value: 'text' },
@@ -146,6 +149,25 @@ const form = ref({
   ],
 })
 
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+watch(
+  () => form.value.name,
+  (name) => {
+    const auto = slugify(name || '')
+    if (!slugManuallyEdited.value && (form.value.slug === '' || form.value.slug === lastAutoSlug.value)) {
+      form.value.slug = auto
+      lastAutoSlug.value = auto
+    }
+  }
+)
+
 function addField() {
   form.value.fields.push({
     name: '',
@@ -157,6 +179,10 @@ function addField() {
 }
 
 function removeField(index: number) {
+  if (form.value.fields.length <= 1) {
+    toast.error('A collection must have at least one field')
+    return
+  }
   form.value.fields.splice(index, 1)
 }
 
@@ -205,13 +231,13 @@ async function handleSubmit() {
 .create-collection-form {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--spacing-lg, 1.5rem);
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--spacing-sm, 0.5rem);
 }
 
 .form-group label {
@@ -225,16 +251,16 @@ async function handleSubmit() {
 }
 
 .field-item {
-  padding: 1rem;
+  padding: var(--spacing-md, 1rem);
   border: 1px solid var(--p-border-color);
-  border-radius: 4px;
-  margin-bottom: 0.5rem;
+  border-radius: var(--border-radius-sm, 4px);
+  margin-bottom: var(--spacing-sm, 0.5rem);
 }
 
 .field-row {
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  gap: var(--spacing-sm, 0.5rem);
+  margin-bottom: var(--spacing-sm, 0.5rem);
 }
 
 .field-options {
@@ -245,7 +271,7 @@ async function handleSubmit() {
 .form-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 0.5rem;
-  margin-top: 1rem;
+  gap: var(--spacing-sm, 0.5rem);
+  margin-top: var(--spacing-md, 1rem);
 }
 </style>

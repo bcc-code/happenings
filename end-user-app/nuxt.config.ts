@@ -1,3 +1,5 @@
+import BCCPreset from '@bcc-code/design-tokens/primevue'
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
@@ -7,13 +9,32 @@ export default defineNuxtConfig({
   modules: [
     '@vite-pwa/nuxt', // For offline support (Nuxt 4 compatible)
     // '@nuxtjs/auth0' // Will be configured when Auth0 integration is implemented
+    '@primevue/nuxt-module'
+  ],
+
+  plugins: [
+    '~/plugins/globals.ts',
   ],
 
   css: [
-    'primevue/resources/themes/lara-light-blue/theme.css',
-    'primevue/resources/primevue.min.css',
     'primeicons/primeicons.css',
+    '@bcc-code/design-tokens/primevue/overrides'
   ],
+
+  primevue: {
+    options: {
+      theme: {
+        preset: BCCPreset,
+        options: {
+          darkModeSelector: '.dark',
+          cssLayer: {
+            name: 'primevue',
+            order: 'theme, base, primevue, custom'
+          }
+        }
+      },
+    },
+  },
 
   devServer: {
     port: 9001,
@@ -46,5 +67,22 @@ export default defineNuxtConfig({
       short_name: 'BCC Events',
       theme_color: '#ffffff',
     },
+  },
+
+  components: [
+    {
+      path: '~/components',
+      pathPrefix: false,
+      ignore: ['**/index.ts', '**/types.ts'],
+    },
+  ],
+
+  imports: {
+    // Exclude PrimeVue's useToast and useConfirm from auto-imports
+    // so our custom composables in composables/ directory are used instead
+    exclude: [
+      'primevue/usetoast',
+      'primevue/useconfirm',
+    ],
   },
 })

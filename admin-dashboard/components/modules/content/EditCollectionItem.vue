@@ -73,7 +73,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, watch } from 'vue'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import Textarea from 'primevue/textarea'
@@ -82,22 +82,11 @@ import Checkbox from 'primevue/checkbox'
 import Button from 'primevue/button'
 import { useToast } from '~/composables/useToast'
 import { useSuperAdminAuth } from '~/composables/useSuperAdminAuth'
-
-interface Collection {
-  id: string
-  name: string
-  fields: Array<{
-    id: string
-    name: string
-    slug: string
-    type: string
-    isRequired: boolean
-  }>
-}
+import type { Collection, CollectionFieldType, CollectionItem } from './types'
 
 interface Props {
   collection: Collection
-  item: any
+  item: Partial<CollectionItem>
   isNew?: boolean
 }
 
@@ -112,12 +101,102 @@ const auth = useSuperAdminAuth()
 const loading = ref(false)
 const formData = ref<Record<string, any>>({})
 
-onMounted(() => {
-  // Initialize form data from item or empty for new items
-  for (const field of props.collection.fields) {
-    formData.value[field.slug] = props.item?.[field.slug] ?? ''
+function toFormValue(type: CollectionFieldType, value: unknown) {
+  if (value === undefined || value === null) {
+    if (type === 'boolean') return false
+    if (type === 'number') return null
+    if (type === 'date') return null
+    if (type === 'json') return ''
+    return ''
   }
-})
+
+  if (type === 'date') {
+    if (value instanceof Date) return value
+    const parsed = new Date(String(value))
+    return Number.isNaN(parsed.getTime()) ? null : parsed
+  }
+
+  if (type === 'number') {
+    if (typeof value === 'number') return value
+    const n = Number(value)
+    return Number.isFinite(n) ? n : null
+  }
+
+  if (type === 'boolean') {
+    if (typeof value === 'boolean') return value
+    if (value === 'true') return true
+    if (value === 'false') return false
+    return Boolean(value)
+  }
+
+  if (type === 'json') {
+    if (typeof value === 'string') return value
+    try {
+      return JSON.stringify(value, null, 2)
+    } catch {
+      return String(value)
+    }
+  }
+
+  return String(value)
+}
+
+function buildInitialFormData() {
+  const next: Record<string, any> = {}
+  for (const field of props.collection.fields) {
+    next[field.slug] = toFormValue(field.type as CollectionFieldType, (props.item as any)?.[field.slug])
+  }
+  formData.value = next
+}
+
+watch(
+  () => [props.collection.id, props.item?.id],
+  () => {
+    buildInitialFormData()
+  },
+  { immediate: true }
+)
+
+function isEmptyValue(value: unknown) {
+  if (value === undefined || value === null) return true
+  if (typeof value === 'string') return value.trim().length === 0
+  return false
+}
+
+function toApiPayload() {
+  const payload: Record<string, any> = {}
+
+  for (const field of props.collection.fields) {
+    const value = formData.value[field.slug]
+
+    // Required validation
+    if (field.isRequired && isEmptyValue(value)) {
+      throw new Error(`Field "${field.name}" is required`)
+    }
+
+    if (field.type === 'json') {
+      const raw = typeof value === 'string' ? value.trim() : value
+      if (raw === '' || raw === null || raw === undefined) {
+        payload[field.slug] = null
+        continue
+      }
+      if (typeof raw === 'string') {
+        try {
+          payload[field.slug] = JSON.parse(raw)
+        } catch {
+          throw new Error(`Invalid JSON in "${field.name}"`)
+        }
+      } else {
+        payload[field.slug] = raw
+      }
+      continue
+    }
+
+    payload[field.slug] = value
+  }
+
+  return payload
+}
 
 async function handleSubmit() {
   loading.value = true
@@ -127,13 +206,15 @@ async function handleSubmit() {
       ? `${config.public.apiUrl}/api/admin/collections/${props.collection.id}/items`
       : `${config.public.apiUrl}/api/admin/collections/${props.collection.id}/items/${props.item.id}`
     
+    const payload = toApiPayload()
+
     await $fetch(url, {
       method: props.isNew ? 'POST' : 'PATCH',
       headers: {
         ...auth.getAuthHeaders(),
         'Content-Type': 'application/json',
       },
-      body: formData.value,
+      body: payload,
     })
     toast.success(props.isNew ? 'Item created successfully' : 'Item updated successfully')
     emit('saved')
@@ -150,13 +231,13 @@ async function handleSubmit() {
 .edit-collection-item {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--spacing-lg, 1.5rem);
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--spacing-sm, 0.5rem);
 }
 
 .form-group label {
@@ -170,7 +251,7 @@ async function handleSubmit() {
 .form-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 0.5rem;
-  margin-top: 1rem;
+  gap: var(--spacing-sm, 0.5rem);
+  margin-top: var(--spacing-md, 1rem);
 }
 </style>

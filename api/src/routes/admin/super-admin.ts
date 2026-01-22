@@ -10,6 +10,7 @@ import {
   getCollection,
   createCollectionHandler,
 } from './collections';
+import { createTenant, deleteTenant, getTenant, listTenants, updateTenant } from './tenants';
 import {
   listCollectionItems,
   getCollectionItemHandler,
@@ -17,6 +18,14 @@ import {
   updateCollectionItemHandler,
   deleteCollectionItemHandler,
 } from './collection-items';
+import {
+  createTenantEvent,
+  deleteTenantEvent,
+  getTenantEvent,
+  listTenantEventRegistrations,
+  listTenantEvents,
+  updateTenantEvent,
+} from './super-admin-events';
 
 const router = new Elysia();
 
@@ -40,6 +49,23 @@ router.onBeforeHandle(requireSuperAdmin);
 router.get('/collections', listCollections);
 router.get('/collections/:id', getCollection);
 router.post('/collections', createCollectionHandler);
+
+// Tenants
+router.get('/tenants', listTenants);
+router.get('/tenants/:tenantId', getTenant);
+router.post('/tenants', createTenant);
+router.put('/tenants/:tenantId', updateTenant);
+router.patch('/tenants/:tenantId', updateTenant);
+router.delete('/tenants/:tenantId', deleteTenant);
+
+// Events per tenant
+router.get('/tenants/:tenantId/events', listTenantEvents);
+router.post('/tenants/:tenantId/events', createTenantEvent);
+router.get('/tenants/:tenantId/events/:id', getTenantEvent);
+router.put('/tenants/:tenantId/events/:id', updateTenantEvent);
+router.patch('/tenants/:tenantId/events/:id', updateTenantEvent);
+router.delete('/tenants/:tenantId/events/:id', deleteTenantEvent);
+router.get('/tenants/:tenantId/events/:id/registrations', listTenantEventRegistrations);
 
 // Collection items
 router.get('/collections/:id/items', listCollectionItems);

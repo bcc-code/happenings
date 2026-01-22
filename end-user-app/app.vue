@@ -1,12 +1,14 @@
 <template>
   <div id="app">
     <NuxtPage />
+    <Toast group="app" />
+    <ConfirmDialog />
   </div>
 </template>
 
 <script setup lang="ts">
-// Main app component
-// Implementation pending - see requirements/ directory for planning
+import ConfirmDialog from 'primevue/confirmdialog'
+import Toast from 'primevue/toast'
 </script>
 
 <style>

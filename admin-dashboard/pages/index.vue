@@ -142,6 +142,11 @@
 </template>
 
 <script setup lang="ts">
+// Use super admin layout for sidebar navigation
+definePageMeta({
+  layout: 'super-admin',
+})
+
 import Button from 'primevue/button'
 import Card from 'primevue/card'
 import Column from 'primevue/column'
