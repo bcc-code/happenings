@@ -97,9 +97,17 @@
               </div>
             </template>
           </Column>
-          <Column header="Actions" :style="{ width: '260px' }">
+          <Column header="Actions" :style="{ width: '340px' }">
             <template #body="{ data }">
               <div class="row-actions">
+                <Button
+                  label="History"
+                  icon="pi pi-history"
+                  size="small"
+                  severity="secondary"
+                  outlined
+                  @click="openHistory(data)"
+                />
                 <Button
                   label="Registrations"
                   icon="pi pi-users"
@@ -180,6 +188,13 @@
         </div>
       </div>
     </Dialog>
+
+    <EventAuditLogDialog
+      v-model:visible="showAuditLogDialog"
+      :event-id="auditLogEventId"
+      :event="auditLogEvent"
+      :tenant-id="selectedTenantId"
+    />
 
     <Dialog v-model:visible="showRegistrationsDialog" modal header="Registrations" :style="{ width: '900px' }">
       <div class="registrations-header">
@@ -312,6 +327,10 @@ const showRegistrationsDialog = ref(false)
 const registrationsLoading = ref(false)
 const registrationsEvent = ref<EventRow | null>(null)
 const registrations = ref<RegistrationRow[]>([])
+
+const showAuditLogDialog = ref(false)
+const auditLogEventId = ref<string | null>(null)
+const auditLogEvent = ref<EventRow | null>(null)
 
 const form = reactive({
   title: '',
@@ -548,6 +567,12 @@ async function confirmDelete(event: EventRow) {
       }
     },
   })
+}
+
+function openHistory(event: EventRow) {
+  auditLogEventId.value = event.id
+  auditLogEvent.value = event
+  showAuditLogDialog.value = true
 }
 
 async function openRegistrations(event: EventRow) {

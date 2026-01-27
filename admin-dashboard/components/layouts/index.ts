@@ -6,6 +6,7 @@
 
 export { default as ModuleContainer } from './ModuleContainer.vue'
 export { default as ModuleHeader } from './ModuleHeader.vue'
+export { default as TopBar } from './TopBar.vue'
 
 // Types are exported from widgets/types.ts to avoid duplication
 // Import types from '~/components/widgets/types' or '~/components/widgets'

@@ -34,6 +34,8 @@
       />
     </Grid>
 
+    <br/>
+
     <ContentGrid>
       <template #primary>
         <Card>
@@ -154,16 +156,16 @@ import DataTable from 'primevue/datatable'
 import Tag from 'primevue/tag'
 import Timeline from 'primevue/timeline'
 import {
-    ActionTile,
-    ActivityItem,
-    ApprovalRow,
-    CapacityCell,
-    ContentGrid,
-    Grid,
-    PageContainer,
-    PageHeader,
-    StatCard,
-    TimelineMarker,
+  ActionTile,
+  ActivityItem,
+  ApprovalRow,
+  CapacityCell,
+  ContentGrid,
+  Grid,
+  PageContainer,
+  PageHeader,
+  StatCard,
+  TimelineMarker,
 } from '~/components/containers'
 
 type TrendDirection = 'up' | 'down'

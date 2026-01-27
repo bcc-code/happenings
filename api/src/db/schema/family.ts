@@ -12,6 +12,8 @@ import {
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
+import { users, tenants } from './index';
 
 export const familyGroups = pgTable(
   'FamilyGroup',
@@ -86,5 +88,26 @@ export const familyRegistrations = pgTable(
   })
 );
 
-// Relations will be added when all imports are available
-// For now, export tables only
+// Relations
+export const familyGroupsRelations = relations(familyGroups, ({ one, many }) => ({
+  tenant: one(tenants, {
+    fields: [familyGroups.tenantId],
+    references: [tenants.id],
+  }),
+  primaryContact: one(users, {
+    fields: [familyGroups.primaryContactId],
+    references: [users.id],
+  }),
+  members: many(familyGroupMembers),
+}));
+
+export const familyGroupMembersRelations = relations(familyGroupMembers, ({ one }) => ({
+  familyGroup: one(familyGroups, {
+    fields: [familyGroupMembers.familyGroupId],
+    references: [familyGroups.id],
+  }),
+  user: one(users, {
+    fields: [familyGroupMembers.userId],
+    references: [users.id],
+  }),
+}));

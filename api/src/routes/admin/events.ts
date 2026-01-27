@@ -33,9 +33,10 @@
 import type { AuthenticatedContext } from '../../middleware/auth';
 import { and, desc, eq } from 'drizzle-orm';
 import { db } from '../../db/client';
-import { events, registrations } from '../../db/schema';
+import { events, registrations, users } from '../../db/schema';
 import { emitCreate, emitDelete, emitUpdate } from '../../events/helpers';
 import { error, success } from '../../utils/response';
+import { getAuditLogsForItem } from '../../utils/audit';
 
 type EventInput = {
   title: string;
@@ -534,6 +535,82 @@ export async function listEventRegistrations({ params, store }: AuthenticatedCon
     });
   } catch (err: any) {
     console.error('Error listing event registrations:', err);
+    return error(err?.message || 'Internal server error', 'INTERNAL_ERROR', 500);
+  }
+}
+
+/**
+ * @swagger
+ * /admin/events/{id}/audit-logs:
+ *   get:
+ *     summary: Get audit logs for an event (Admin)
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: X-Tenant-ID
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Audit logs for the event
+ */
+export async function getEventAuditLogs({ params, store }: AuthenticatedContext) {
+  try {
+    const tenantId = store.user?.tenantId;
+    const { id } = params as { id: string };
+
+    if (!tenantId) {
+      return error('Tenant ID required', 'TENANT_ID_REQUIRED', 400);
+    }
+
+    // Verify event exists and belongs to tenant
+    const event = await db.query.events.findFirst({
+      where: and(eq(events.id, id), eq(events.tenantId, tenantId)),
+    });
+    if (!event) {
+      return error('Event not found', 'NOT_FOUND', 404);
+    }
+
+    // Get audit logs for this event
+    const logs = await getAuditLogsForItem('events', id, 100);
+
+    // Fetch user information for each log entry
+    const logsWithUsers = await Promise.all(
+      logs.map(async (log) => {
+        const user = await db.query.users.findFirst({
+          where: eq(users.id, log.userId),
+          columns: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        });
+
+        return {
+          ...log,
+          user: user || null,
+        };
+      })
+    );
+
+    return success({
+      event: {
+        id: event.id,
+        title: event.title,
+      },
+      logs: logsWithUsers,
+    });
+  } catch (err: any) {
+    console.error('Error fetching event audit logs:', err);
     return error(err?.message || 'Internal server error', 'INTERNAL_ERROR', 500);
   }
 }

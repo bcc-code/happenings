@@ -147,3 +147,69 @@ export interface ApiError {
 export type Status = 'pending' | 'active' | 'inactive' | 'cancelled' | 'completed';
 export type Role = 'super_admin' | 'admin' | 'event_manager' | 'user';
 export type Currency = 'USD' | 'EUR' | 'GBP' | 'NOK' | 'SEK' | 'DKK';
+
+// Permission System Types
+export type PermissionLevel = 'view' | 'edit' | 'manage' | 'owner';
+export type GroupType = 'user_group' | 'document_group' | 'both';
+
+export interface Group {
+  id: string;
+  tenantId: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  type: GroupType;
+  isSystem: boolean;
+  metadata?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface GroupMember {
+  id: string;
+  groupId: string;
+  userId: string;
+  addedAt: Date;
+  addedBy?: string | null;
+}
+
+export interface GroupAssignment {
+  id: string;
+  groupId: string;
+  entityType: string; // e.g., 'Event', 'Post', 'Registration'
+  entityId: string;
+  assignedAt: Date;
+  assignedBy?: string | null;
+  metadata?: string | null;
+}
+
+export interface GroupPermission {
+  id: string;
+  userGroupId: string;
+  documentGroupId: string;
+  permissionLevel: PermissionLevel;
+  grantedAt: Date;
+  grantedBy?: string | null;
+  metadata?: string | null;
+}
+
+/**
+ * Permission check result
+ */
+export interface PermissionResult {
+  allowed: boolean;
+  level?: PermissionLevel;
+  reason?: string;
+}
+
+/**
+ * Permission check context
+ */
+export interface PermissionContext {
+  userId: string;
+  tenantId: string;
+  userGroupIds: string[];
+  action: PermissionLevel;
+  entityType: string;
+  entityId: string;
+}

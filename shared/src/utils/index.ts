@@ -2,6 +2,9 @@
  * Shared utility functions
  */
 
+// Re-export permission utilities
+export * from './permissions';
+
 /**
  * Format currency amount
  */

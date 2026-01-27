@@ -190,6 +190,7 @@ export * from './communication';
 export * from './family';
 export * from './finance';
 export * from './meals';
+export * from './permissions';
 export * from './registrations';
 export * from './sessions';
 export * from './shifts';

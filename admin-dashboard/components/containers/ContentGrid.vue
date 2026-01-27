@@ -10,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed } from 'vue';
 
 export interface ContentGridProps {
   ratio?: '2:1' | '3:1' | '1:1'

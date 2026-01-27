@@ -15,5 +15,5 @@
 // export { useEvent } from './useEvent';
 // export { useRegistration } from './useRegistration';
 
-// Placeholder - composables will be added as needed
-export {};
+// Permission composables
+export { usePermissions, useDocumentGroups } from './usePermissions';

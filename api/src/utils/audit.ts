@@ -86,10 +86,15 @@ export async function createAuditLog(
   tx?: PostgresJsDatabase<typeof schema> | BunSQLiteDatabase<typeof schema>
 ): Promise<string> {
   const database = tx || db;
+  const { config } = await import('../config');
+
+  // For SQLite, we need to explicitly provide the ID since gen_random_uuid() doesn't exist
+  const id = config.databaseType === 'sqlite' ? crypto.randomUUID() : undefined;
 
   const [auditLog] = await database
     .insert(auditLogs)
     .values({
+      ...(id ? { id } : {}), // Only include id for SQLite
       collection: data.collection,
       itemId: data.itemId,
       operation: data.operation,

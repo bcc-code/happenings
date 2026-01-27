@@ -22,6 +22,7 @@ import {
   createTenantEvent,
   deleteTenantEvent,
   getTenantEvent,
+  getTenantEventAuditLogs,
   listTenantEventRegistrations,
   listTenantEvents,
   updateTenantEvent,
@@ -66,6 +67,7 @@ router.put('/tenants/:tenantId/events/:id', updateTenantEvent);
 router.patch('/tenants/:tenantId/events/:id', updateTenantEvent);
 router.delete('/tenants/:tenantId/events/:id', deleteTenantEvent);
 router.get('/tenants/:tenantId/events/:id/registrations', listTenantEventRegistrations);
+router.get('/tenants/:tenantId/events/:id/audit-logs', getTenantEventAuditLogs);
 
 // Collection items
 router.get('/collections/:id/items', listCollectionItems);
